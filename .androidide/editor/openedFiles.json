@@ -1,0 +1,20 @@
+{
+  "allFiles": [
+    {
+      "file": "/storage/emulated/0/AndroidIDEProjects/GeekTest/app/src/main/java/com/mral/geektest/MainActivity.kt",
+      "selection": {
+        "end": {
+          "column": 24,
+          "index": 13428,
+          "line": 275
+        },
+        "start": {
+          "column": 24,
+          "index": 13428,
+          "line": 275
+        }
+      }
+    }
+  ],
+  "selectedFile": "/storage/emulated/0/AndroidIDEProjects/GeekTest/app/src/main/java/com/mral/geektest/MainActivity.kt"
+}

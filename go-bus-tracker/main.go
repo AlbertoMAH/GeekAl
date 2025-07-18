@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 )
@@ -34,14 +35,19 @@ func main() {
 	http.HandleFunc("/api/position/", handleGetPosition)
 	http.HandleFunc("/api/stopSharing", handleStopSharing)
 
-	port := "10000" // remplace par os.Getenv("PORT") si déploiement Render
+	// Utiliser la variable d’environnement PORT si disponible
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "10000" // fallback en local
+	}
+
 	fmt.Println("Serveur Go en écoute sur le port", port)
 	http.ListenAndServe(":"+port, nil)
 }
 
 func handlePosition(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Méthode non autorisée", http.StatusMethodNotAllowed)
+		http.Error(w, `{"error":"Méthode non autorisée"}`, http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -65,7 +71,7 @@ func handlePosition(w http.ResponseWriter, r *http.Request) {
 
 func handleGetPosition(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Méthode non autorisée", http.StatusMethodNotAllowed)
+		http.Error(w, `{"error":"Méthode non autorisée"}`, http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -90,7 +96,7 @@ func handleGetPosition(w http.ResponseWriter, r *http.Request) {
 
 func handleStopSharing(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Méthode non autorisée", http.StatusMethodNotAllowed)
+		http.Error(w, `{"error":"Méthode non autorisée"}`, http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -114,4 +120,3 @@ func handleStopSharing(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"Bus introuvable"}`, http.StatusNotFound)
 	}
 }
-
