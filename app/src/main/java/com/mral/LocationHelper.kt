@@ -24,6 +24,8 @@ import android.util.Log
 
 object LocationHelper {
 
+    private const val BASE_URL = "https://geektestgo.onrender.com"
+
     fun hasLocationPermission(context: Context): Boolean {
         return ContextCompat.checkSelfPermission(
             context,
@@ -125,7 +127,7 @@ object LocationHelper {
         Thread {
             var connection: HttpURLConnection? = null
             try {
-                val url = URL("https://geektest.onrender.com/api/position")
+                val url = URL("$BASE_URL/api/position")
                 connection = url.openConnection() as HttpURLConnection
 
                 connection.requestMethod = "POST"
@@ -175,7 +177,7 @@ object LocationHelper {
         Thread {
             var connection: HttpURLConnection? = null
             try {
-                val url = URL("https://geektest.onrender.com/api/stopSharing")
+                val url = URL("$BASE_URL/api/stopSharing")
                 connection = url.openConnection() as HttpURLConnection
 
                 connection.requestMethod = "POST"

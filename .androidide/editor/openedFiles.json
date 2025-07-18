@@ -4,14 +4,29 @@
       "file": "/storage/emulated/0/AndroidIDEProjects/GeekTest/app/src/main/java/com/mral/geektest/MainActivity.kt",
       "selection": {
         "end": {
-          "column": 24,
-          "index": 13428,
-          "line": 275
+          "column": 1,
+          "index": 13776,
+          "line": 288
         },
         "start": {
-          "column": 24,
-          "index": 13428,
-          "line": 275
+          "column": 1,
+          "index": 13776,
+          "line": 288
+        }
+      }
+    },
+    {
+      "file": "/storage/emulated/0/AndroidIDEProjects/GeekTest/app/src/main/java/com/mral/LocationHelper.kt",
+      "selection": {
+        "end": {
+          "column": 1,
+          "index": 7310,
+          "line": 207
+        },
+        "start": {
+          "column": 1,
+          "index": 7310,
+          "line": 207
         }
       }
     }
