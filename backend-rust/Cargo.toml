@@ -1,5 +1,5 @@
 [package]
-name = "backend-tust"
+name = "backend-rust"
 version = "0.1.0"
 edition = "2021"
 
@@ -13,3 +13,4 @@ tower-http = { version = "0.5", features = ["cors"] }
 hyper = "1"
 chrono = "0.4"
 dotenvy = "0.15"
+
