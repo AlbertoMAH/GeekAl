@@ -14,7 +14,7 @@ use std::{
 };
 use tower_http::cors::{Any, CorsLayer};
 use chrono::Utc;
-use hyper::Server; // ✅ Import correct
+use tokio::net::TcpListener; // ✅ Use TcpListener instead of hyper::Server
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct Position {
@@ -59,10 +59,10 @@ async fn main() {
         .layer(cors);
 
     println!("Serveur Rust en écoute sur http://{}", addr);
-    Server::bind(&addr) // ✅ Corrigé ici
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+    
+    // ✅ Use TcpListener and axum::serve instead of hyper::Server
+    let listener = TcpListener::bind(&addr).await.unwrap();
+    axum::serve(listener, app).await.unwrap();
 }
 
 async fn home() -> impl IntoResponse {
