@@ -14,6 +14,7 @@ use std::{
 };
 use tower_http::cors::{Any, CorsLayer};
 use chrono::Utc;
+use hyper::Server; // ✅ Import correct
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct Position {
@@ -58,7 +59,7 @@ async fn main() {
         .layer(cors);
 
     println!("Serveur Rust en écoute sur http://{}", addr);
-    axum::Server::bind(&addr)
+    Server::bind(&addr) // ✅ Corrigé ici
         .serve(app.into_make_service())
         .await
         .unwrap();
