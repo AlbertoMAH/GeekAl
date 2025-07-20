@@ -24,8 +24,9 @@ import android.util.Log
 
 object LocationHelper {
 
-    private const val BASE_URL = "https://geektestgo.onrender.com"
-
+   // private const val BASE_URL = "https://geektestgo.onrender.com"  
+    private const val BASE_URL = "https://testrust-4io8.onrender.com"
+    
     fun hasLocationPermission(context: Context): Boolean {
         return ContextCompat.checkSelfPermission(
             context,

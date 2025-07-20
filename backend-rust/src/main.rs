@@ -14,7 +14,7 @@ use std::{
 };
 use tower_http::cors::{Any, CorsLayer};
 use chrono::Utc;
-use tokio::net::TcpListener; // ✅ Use TcpListener instead of hyper::Server
+use tokio::net::TcpListener;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct Position {
@@ -25,6 +25,7 @@ struct Position {
 
 #[derive(Debug, Deserialize)]
 struct PositionRequest {
+    #[serde(rename = "busNumber")] // ✅ accepter camelCase
     bus_number: String,
     latitude: f64,
     longitude: f64,
@@ -32,6 +33,7 @@ struct PositionRequest {
 
 #[derive(Debug, Deserialize)]
 struct StopSharingRequest {
+    #[serde(rename = "busNumber")] // ✅ pareil ici
     bus_number: String,
 }
 
@@ -58,9 +60,9 @@ async fn main() {
         .with_state(state)
         .layer(cors);
 
-    println!("Serveur Rust en écoute sur http://{}", addr);
-    
-    // ✅ Use TcpListener and axum::serve instead of hyper::Server
+    println!("✅ Serveur Rust en écoute sur http://{}", addr);
+    println!("🌍 Accessible publiquement : https://testrust-4io8.onrender.com");
+
     let listener = TcpListener::bind(&addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
@@ -74,7 +76,8 @@ async fn home() -> impl IntoResponse {
             "get_position": "GET /api/position/{bus_number}",
             "post_position": "POST /api/position",
             "stop_sharing": "POST /api/stopSharing"
-        }
+        },
+        "url_publique": "https://testrust-4io8.onrender.com"
     });
     (StatusCode::OK, Json(response))
 }
@@ -93,10 +96,7 @@ async fn save_position(
 
     map.insert(payload.bus_number.clone(), position);
 
-    println!(
-        "Position enregistrée pour le bus {}",
-        payload.bus_number
-    );
+    println!("✅ Position enregistrée pour le bus {}", payload.bus_number);
 
     (StatusCode::OK, Json(serde_json::json!({"message": "Position enregistrée"})))
 }
@@ -108,7 +108,7 @@ async fn get_position(
     let map = state.lock().unwrap();
 
     if let Some(position) = map.get(&bus_number) {
-        println!("Position demandée pour le bus {}", bus_number);
+        println!("📡 Position demandée pour le bus {}", bus_number);
         (StatusCode::OK, Json(position.clone())).into_response()
     } else {
         (
@@ -126,7 +126,7 @@ async fn stop_sharing(
     let mut map = state.lock().unwrap();
 
     if map.remove(&payload.bus_number).is_some() {
-        println!("Partage arrêté pour le bus {}", payload.bus_number);
+        println!("🛑 Partage arrêté pour le bus {}", payload.bus_number);
         (
             StatusCode::OK,
             Json(serde_json::json!({
