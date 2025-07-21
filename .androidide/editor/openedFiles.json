@@ -16,20 +16,20 @@
       }
     },
     {
-      "file": "/storage/emulated/0/AndroidIDEProjects/GeekTest/backend-rust/src/main.rs",
+      "file": "/storage/emulated/0/AndroidIDEProjects/GeekTest/app/src/main/java/com/mral/geektest/MainActivity.kt",
       "selection": {
         "end": {
-          "column": 1,
-          "index": 4027,
-          "line": 141
+          "column": 0,
+          "index": 13775,
+          "line": 288
         },
         "start": {
-          "column": 1,
-          "index": 4027,
-          "line": 141
+          "column": 0,
+          "index": 2236,
+          "line": 51
         }
       }
     }
   ],
-  "selectedFile": "/storage/emulated/0/AndroidIDEProjects/GeekTest/backend-rust/src/main.rs"
+  "selectedFile": "/storage/emulated/0/AndroidIDEProjects/GeekTest/app/src/main/java/com/mral/LocationHelper.kt"
 }
