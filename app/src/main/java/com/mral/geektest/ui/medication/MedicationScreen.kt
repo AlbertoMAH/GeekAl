@@ -1,6 +1,5 @@
 package com.mral.geektest.ui.medication
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -10,24 +9,23 @@ import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Vaccines
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.mral.geektest.R
+import com.mral.geektest.ui.theme.GeekTestTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MedicationScreen() {
+fun MedicationScreen(onAddMedicationClick: () -> Unit) {
     Scaffold(
         topBar = { TopBar() },
         bottomBar = { BottomNavigationBar() }
@@ -40,7 +38,7 @@ fun MedicationScreen() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            MainContent()
+            MainContent(onAddMedicationClick = onAddMedicationClick)
         }
     }
 }
@@ -67,19 +65,7 @@ fun TopBar() {
 }
 
 @Composable
-fun MainContent() {
-    var showAddMedicationDialog by remember { mutableStateOf(false) }
-
-    if (showAddMedicationDialog) {
-        AlertDialog(
-            onDismissRequest = { showAddMedicationDialog = false },
-            title = { Text("Ajouter un médicament") },
-            text = { AddMedicationForm { showAddMedicationDialog = false } },
-            confirmButton = {},
-            dismissButton = {}
-        )
-    }
-
+fun MainContent(onAddMedicationClick: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -106,7 +92,7 @@ fun MainContent() {
             color = Color.Gray
         )
         Button(
-            onClick = { showAddMedicationDialog = true },
+            onClick = onAddMedicationClick,
             shape = RoundedCornerShape(8.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF0F2F4))
         ) {
@@ -148,5 +134,7 @@ fun BottomNavigationBar() {
 @Preview(showBackground = true)
 @Composable
 fun MedicationScreenPreview() {
-    MedicationScreen()
+    GeekTestTheme {
+        MedicationScreen(onAddMedicationClick = {})
+    }
 }
