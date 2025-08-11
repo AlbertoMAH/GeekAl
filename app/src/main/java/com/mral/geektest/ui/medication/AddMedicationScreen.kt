@@ -65,15 +65,21 @@ fun AddMedicationScreen(onClose: () -> Unit) {
                 Button(
                     onClick = onClose,
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF0F2F4)),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("Annuler", color = Color.Black)
+                    Text("Annuler")
                 }
                 Button(
                     onClick = { /* TODO: Save medication */ onClose() },
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1980E6)),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text("Enregistrer")
@@ -133,8 +139,8 @@ fun StyledTextField(label: String, placeholder: String, value: String, onValueCh
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
                 disabledIndicatorColor = Color.Transparent,
-                unfocusedContainerColor = Color(0xFFF0F2F4),
-                focusedContainerColor = Color(0xFFF0F2F4)
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
             )
         )
     }
@@ -152,8 +158,8 @@ fun SwitchRow(text: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
-                checkedTrackColor = Color(0xFF1980E6)
+                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                checkedTrackColor = MaterialTheme.colorScheme.primary
             )
         )
     }
