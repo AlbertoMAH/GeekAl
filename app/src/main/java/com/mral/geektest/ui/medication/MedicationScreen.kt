@@ -10,7 +10,7 @@ import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Vaccines
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -68,6 +68,18 @@ fun TopBar() {
 
 @Composable
 fun MainContent() {
+    var showAddMedicationDialog by remember { mutableStateOf(false) }
+
+    if (showAddMedicationDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddMedicationDialog = false },
+            title = { Text("Ajouter un médicament") },
+            text = { AddMedicationForm { showAddMedicationDialog = false } },
+            confirmButton = {},
+            dismissButton = {}
+        )
+    }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -94,7 +106,7 @@ fun MainContent() {
             color = Color.Gray
         )
         Button(
-            onClick = { /* TODO */ },
+            onClick = { showAddMedicationDialog = true },
             shape = RoundedCornerShape(8.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF0F2F4))
         ) {
