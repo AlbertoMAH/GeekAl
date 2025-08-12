@@ -468,3 +468,90 @@ fun AddMedicationScreenPreview() {
         AddMedicationScreen(onClose = {})
     }
 }
+
+// A custom TimePickerDialog because the M3 one is not available yet
+@Composable
+fun TimePickerDialog(
+    title: @Composable () -> Unit = {},
+    onDismissRequest: () -> Unit,
+    confirmButton: @Composable () -> Unit,
+    dismissButton: @Composable () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = title,
+        text = content,
+        confirmButton = confirmButton,
+        dismissButton = dismissButton
+    )
+}
+
+@Composable
+fun SectionTitle(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+        modifier = Modifier.padding(top = 8.dp)
+    )
+}
+
+@Composable
+fun StyledTextField(
+    label: String,
+    placeholder: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    leadingIcon: ImageVector? = null,
+    trailingIcon: @Composable (() -> Unit)? = null,
+    readOnly: Boolean = false,
+    isError: Boolean = false,
+    errorMessage: String = ""
+) {
+    Column(modifier = modifier) {
+        Text(text = label, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), modifier = Modifier.padding(bottom = 8.dp))
+        TextField(
+            value = value,
+            onValueChange = onValueChange,
+            readOnly = readOnly,
+            placeholder = { Text(placeholder) },
+            leadingIcon = leadingIcon?.let { { Icon(it, contentDescription = null) } },
+            trailingIcon = trailingIcon,
+            isError = isError,
+            supportingText = {
+                if (isError) {
+                    Text(errorMessage, color = MaterialTheme.colorScheme.error)
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(8.dp),
+            colors = TextFieldDefaults.colors(
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                disabledIndicatorColor = Color.Transparent,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        )
+    }
+}
+
+@Composable
+fun SwitchRow(text: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(text, style = MaterialTheme.typography.bodyLarge)
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                checkedTrackColor = MaterialTheme.colorScheme.primary
+            )
+        )
+    }
+}
