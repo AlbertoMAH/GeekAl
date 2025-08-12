@@ -21,7 +21,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mral.geektest.ui.theme.GeekTestTheme
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -345,7 +344,7 @@ fun SwitchRow(text: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit
 @Preview(showBackground = true)
 @Composable
 fun AddMedicationScreenPreview() {
-    GeekTestTheme {
+    MaterialTheme {
         AddMedicationScreen(onClose = {})
     }
 }

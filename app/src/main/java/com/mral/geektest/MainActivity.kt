@@ -10,14 +10,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import com.mral.geektest.ui.medication.AddMedicationScreen
 import com.mral.geektest.ui.medication.MedicationScreen
-import com.mral.geektest.ui.theme.GeekTestTheme
 
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            GeekTestTheme {
+            MaterialTheme {
                 var showAddMedicationScreen by remember { mutableStateOf(false) }
 
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
