@@ -1,21 +1,30 @@
 package com.mral.geektest.ui.medication
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -30,57 +39,99 @@ fun AddMedicationScreen(onClose: () -> Unit) {
     var medicationName by remember { mutableStateOf("") }
     var form by remember { mutableStateOf("") }
     var dosage by remember { mutableStateOf("") }
-    var colorOrPhoto by remember { mutableStateOf("") }
     var quantityPerIntake by remember { mutableStateOf("") }
     var frequency by remember { mutableStateOf("") }
     var intakeTime by remember { mutableStateOf("") }
-    var treatmentDuration by remember { mutableStateOf("") }
+    var startDate by remember { mutableStateOf("") }
+    var endDate by remember { mutableStateOf("") }
     var reminderMode by remember { mutableStateOf("Notification") }
     var repeatReminder by remember { mutableStateOf(false) }
     var hideNameInNotification by remember { mutableStateOf(true) }
 
-    val isFormValid by remember(medicationName, dosage, intakeTime, treatmentDuration) {
+    var isVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        isVisible = true
+    }
+
+    // Touched states for validation
+    var medicationNameTouched by remember { mutableStateOf(false) }
+    var dosageTouched by remember { mutableStateOf(false) }
+    var intakeTimeTouched by remember { mutableStateOf(false) }
+    var startDateTouched by remember { mutableStateOf(false) }
+    var endDateTouched by remember { mutableStateOf(false) }
+
+
+    val isFormValid by remember(medicationName, dosage, intakeTime, startDate, endDate) {
         derivedStateOf {
             medicationName.isNotBlank() &&
             dosage.isNotBlank() &&
             intakeTime.isNotBlank() &&
-            treatmentDuration.isNotBlank()
+            startDate.isNotBlank() &&
+            endDate.isNotBlank()
         }
     }
 
     // State for pickers
-    var showDatePicker by remember { mutableStateOf(false) }
+    var showStartDatePicker by remember { mutableStateOf(false) }
+    var showEndDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
-    val datePickerState = rememberDatePickerState()
+    val startDatePickerState = rememberDatePickerState()
+    val endDatePickerState = rememberDatePickerState()
     val timePickerState = rememberTimePickerState()
 
     // State for dropdown
     var isReminderModeExpanded by remember { mutableStateOf(false) }
     val reminderOptions = listOf("Notification", "Sonnerie", "Vibration")
 
-    if (showDatePicker) {
+    if (showStartDatePicker) {
         DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
+            onDismissRequest = { showStartDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
-                    val selectedDate = datePickerState.selectedDateMillis?.let {
+                    val selectedDate = startDatePickerState.selectedDateMillis?.let {
                         val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
                         calendar.timeInMillis = it
                         SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(calendar.time)
                     }
-                    treatmentDuration = selectedDate ?: ""
-                    showDatePicker = false
+                    startDate = selectedDate ?: ""
+                    showStartDatePicker = false
                 }) {
                     Text("OK")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
+                TextButton(onClick = { showStartDatePicker = false }) {
                     Text("Annuler")
                 }
             }
         ) {
-            DatePicker(state = datePickerState)
+            DatePicker(state = startDatePickerState)
+        }
+    }
+
+    if (showEndDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showEndDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val selectedDate = endDatePickerState.selectedDateMillis?.let {
+                        val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+                        calendar.timeInMillis = it
+                        SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(calendar.time)
+                    }
+                    endDate = selectedDate ?: ""
+                    showEndDatePicker = false
+                }) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEndDatePicker = false }) {
+                    Text("Annuler")
+                }
+            }
+        ) {
+            DatePicker(state = endDatePickerState)
         }
     }
 
@@ -157,34 +208,66 @@ fun AddMedicationScreen(onClose: () -> Unit) {
             }
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 24.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+        AnimatedVisibility(
+            visible = isVisible,
+            enter = fadeIn(animationSpec = tween(durationMillis = 500)) + slideInVertically(
+                initialOffsetY = { it / 10 },
+                animationSpec = tween(durationMillis = 500)
+            ),
+            modifier = Modifier.padding(paddingValues)
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
-            SectionTitle("Informations sur le médicament")
-            StyledTextField(label = "Nom du médicament", placeholder = "Entrez le nom du médicament", value = medicationName, onValueChange = { medicationName = it })
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                SectionTitle("Informations sur le médicament")
+                StyledTextField(
+                label = "Nom du médicament",
+                placeholder = "Entrez le nom du médicament",
+                value = medicationName,
+                onValueChange = { medicationName = it },
+                isError = medicationNameTouched && medicationName.isBlank(),
+                errorMessage = "Le nom du médicament est requis.",
+                modifier = Modifier.onFocusChanged { if (!it.isFocused) medicationNameTouched = true }
+            )
             StyledTextField(label = "Forme", placeholder = "Ex: Comprimé, Capsule", value = form, onValueChange = { form = it })
-            StyledTextField(label = "Dosage", placeholder = "Ex: 25mg, 500ml", value = dosage, onValueChange = { dosage = it })
+            StyledTextField(
+                label = "Dosage",
+                placeholder = "Ex: 25mg, 500ml",
+                value = dosage,
+                onValueChange = { dosage = it },
+                isError = dosageTouched && dosage.isBlank(),
+                errorMessage = "Le dosage est requis.",
+                modifier = Modifier.onFocusChanged { if (!it.isFocused) dosageTouched = true }
+            )
 
             Column {
                 Text(text = "Couleur ou photo", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), modifier = Modifier.padding(bottom = 8.dp))
-                OutlinedButton(
-                    onClick = { /* TODO: Implement color/photo picker */ },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp)
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .clickable { /* TODO: Implement color/photo picker */ },
+                    shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
-                    Text("Ajouter une couleur ou une photo")
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Default.AddPhotoAlternate, contentDescription = "Add photo", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Ajouter une couleur ou une photo", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
             Divider()
-            Spacer(modifier = Modifier.height(8.dp))
 
             SectionTitle("Posologie")
             StyledTextField(label = "Quantité par prise", placeholder = "Ex: 1, 2", value = quantityPerIntake, onValueChange = { quantityPerIntake = it })
@@ -197,24 +280,50 @@ fun AddMedicationScreen(onClose: () -> Unit) {
                     value = intakeTime,
                     onValueChange = {},
                     leadingIcon = Icons.Default.Schedule,
-                    readOnly = true
+                    readOnly = true,
+                    isError = intakeTimeTouched && intakeTime.isBlank(),
+                    errorMessage = "L'heure de prise est requise.",
+                    modifier = Modifier.onFocusChanged { if (!it.isFocused) intakeTimeTouched = true },
+                    trailingIcon = {
+                        if (intakeTime.isNotBlank()) {
+                            IconButton(onClick = { intakeTime = "" }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Clear time")
+                            }
+                        }
+                    }
                 )
             }
 
-            Box(modifier = Modifier.clickable { showDatePicker = true }) {
-                StyledTextField(
-                    label = "Durée du traitement",
-                    placeholder = "Sélectionnez la durée",
-                    value = treatmentDuration,
-                    onValueChange = {},
-                    leadingIcon = Icons.Default.CalendarToday,
-                    readOnly = true
-                )
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Box(modifier = Modifier.weight(1f).clickable { showStartDatePicker = true }) {
+                    StyledTextField(
+                        label = "Date de début",
+                        placeholder = "Sélectionnez",
+                        value = startDate,
+                        onValueChange = {},
+                        leadingIcon = Icons.Default.CalendarToday,
+                        readOnly = true,
+                        isError = startDateTouched && startDate.isBlank(),
+                        errorMessage = "Requis",
+                        modifier = Modifier.onFocusChanged { if (!it.isFocused) startDateTouched = true }
+                    )
+                }
+                Box(modifier = Modifier.weight(1f).clickable { showEndDatePicker = true }) {
+                    StyledTextField(
+                        label = "Date de fin",
+                        placeholder = "Sélectionnez",
+                        value = endDate,
+                        onValueChange = {},
+                        leadingIcon = Icons.Default.CalendarToday,
+                        readOnly = true,
+                        isError = endDateTouched && endDate.isBlank(),
+                        errorMessage = "Requis",
+                        modifier = Modifier.onFocusChanged { if (!it.isFocused) endDateTouched = true }
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
             Divider()
-            Spacer(modifier = Modifier.height(8.dp))
 
             SectionTitle("Alertes & rappels")
 
@@ -297,10 +406,14 @@ fun StyledTextField(
     placeholder: String,
     value: String,
     onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
     leadingIcon: ImageVector? = null,
-    readOnly: Boolean = false
+    trailingIcon: @Composable (() -> Unit)? = null,
+    readOnly: Boolean = false,
+    isError: Boolean = false,
+    errorMessage: String = ""
 ) {
-    Column {
+    Column(modifier = modifier) {
         Text(text = label, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), modifier = Modifier.padding(bottom = 8.dp))
         TextField(
             value = value,
@@ -308,6 +421,13 @@ fun StyledTextField(
             readOnly = readOnly,
             placeholder = { Text(placeholder) },
             leadingIcon = leadingIcon?.let { { Icon(it, contentDescription = null) } },
+            trailingIcon = trailingIcon,
+            isError = isError,
+            supportingText = {
+                if (isError) {
+                    Text(errorMessage, color = MaterialTheme.colorScheme.error)
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(8.dp),
             colors = TextFieldDefaults.colors(
