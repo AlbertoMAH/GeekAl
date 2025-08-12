@@ -87,7 +87,7 @@ fun AddMedicationScreen(onClose: () -> Unit) {
 
     if (showTimePicker) {
         TimePickerDialog(
-            onDismissRequest = { showTimePlayer -> showTimePicker = false },
+            onDismissRequest = { showTimePicker = false },
             confirmButton = {
                 TextButton(
                     onClick = {
