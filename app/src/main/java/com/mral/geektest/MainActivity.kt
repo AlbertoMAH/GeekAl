@@ -6,13 +6,10 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Bundle
-import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.DrawableRes
-import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -25,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,18 +31,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
-import com.google.android.gms.location.LocationServices
 import com.mral.geektest.ui.composables.MapView
 import org.maplibre.android.MapLibre
 import org.maplibre.android.WellKnownTileServer
-import org.maplibre.android.annotations.IconFactory
-import org.maplibre.android.annotations.Marker
-import org.maplibre.android.annotations.MarkerOptions
-import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
+import org.maplibre.android.location.LocationComponentActivationOptions
+import org.maplibre.android.location.modes.CameraMode
+import org.maplibre.android.location.modes.RenderMode
 import org.maplibre.android.maps.MapLibreMap
 
 class MainActivity : ComponentActivity() {
@@ -59,53 +52,13 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-fun getBitmapFromVectorDrawable(context: Context, @DrawableRes drawableId: Int): Bitmap? {
-    val drawable = AppCompatResources.getDrawable(context, drawableId) ?: return null
-    val bitmap = Bitmap.createBitmap(
-        drawable.intrinsicWidth,
-        drawable.intrinsicHeight,
-        Bitmap.Config.ARGB_8888
-    )
-    val canvas = Canvas(bitmap)
-    drawable.setBounds(0, 0, canvas.width, canvas.height)
-    drawable.draw(canvas)
-    return bitmap
-}
-
 @SuppressLint("MissingPermission")
 @Composable
 fun MainScreen() {
     val context = LocalContext.current
     val styleUrl = "https://api.maptiler.com/maps/streets/style.json?key=${context.getString(R.string.maptiler_api_key)}"
     var map: MapLibreMap? by remember { mutableStateOf(null) }
-    var userMarker: Marker? by remember { mutableStateOf(null) }
-    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
-
-    val locationCallback = remember {
-        object : LocationCallback() {
-            override fun onLocationResult(locationResult: LocationResult) {
-                locationResult.lastLocation?.let { location ->
-                    map?.let {
-                        val latLng = LatLng(location.latitude, location.longitude)
-                        it.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 13.0))
-
-                        userMarker?.let { marker ->
-                            it.removeMarker(marker)
-                        }
-
-                        val icon = IconFactory.getInstance(context).fromBitmap(
-                            getBitmapFromVectorDrawable(context, R.drawable.ic_marker)!!
-                        )
-                        userMarker = it.addMarker(
-                            MarkerOptions()
-                                .position(latLng)
-                                .icon(icon)
-                        )
-                    }
-                }
-            }
-        }
-    }
+    var hasLocationPermission by remember { mutableStateOf(false) }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -113,18 +66,26 @@ fun MainScreen() {
         if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
             permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
         ) {
-            val locationRequest = LocationRequest.create().apply {
-                interval = 10000
-                fastestInterval = 5000
-                priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-            }
-            fusedLocationClient.requestLocationUpdates(
-                locationRequest,
-                locationCallback,
-                Looper.getMainLooper()
-            )
+            hasLocationPermission = true
         } else {
             // TODO: Location permission denied
+        }
+    }
+
+    LaunchedEffect(map, hasLocationPermission) {
+        if (map != null && hasLocationPermission) {
+            map?.getStyle { style ->
+                map?.locationComponent?.apply {
+                    activateLocationComponent(
+                        LocationComponentActivationOptions.builder(context, style)
+                            .useDefaultLocationEngine(true)
+                            .build()
+                    )
+                    isLocationComponentEnabled = true
+                    cameraMode = CameraMode.TRACKING
+                    renderMode = RenderMode.COMPASS
+                }
+            }
         }
     }
 
@@ -148,7 +109,9 @@ fun MainScreen() {
                 .padding(paddingValues)
         ) {
             MapView(
-                onMapReady = { map = it },
+                onMapReady = {
+                    map = it
+                },
                 styleUrl = styleUrl,
                 initialCenter = LatLng(5.3, -4.0),
                 initialZoom = 12.0
