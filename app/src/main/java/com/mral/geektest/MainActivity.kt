@@ -36,6 +36,7 @@ import org.maplibre.android.MapLibre
 import org.maplibre.android.WellKnownTileServer
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.location.LocationComponentActivationOptions
+import org.maplibre.android.location.engine.LocationEngineRequest
 import org.maplibre.android.location.modes.CameraMode
 import org.maplibre.android.location.modes.RenderMode
 import org.maplibre.android.maps.MapLibreMap
@@ -76,9 +77,15 @@ fun MainScreen() {
         if (map != null && hasLocationPermission) {
             map?.getStyle { style ->
                 map?.locationComponent?.apply {
+                    val locationEngineRequest = LocationEngineRequest.Builder(750)
+                        .setFastestInterval(750)
+                        .setPriority(LocationEngineRequest.PRIORITY_HIGH_ACCURACY)
+                        .build()
+
                     activateLocationComponent(
                         LocationComponentActivationOptions.builder(context, style)
                             .useDefaultLocationEngine(true)
+                            .locationEngineRequest(locationEngineRequest)
                             .build()
                     )
                     isLocationComponentEnabled = true
