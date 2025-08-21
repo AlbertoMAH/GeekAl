@@ -41,6 +41,7 @@ import com.mral.geektest.ui.composables.MapView
 import org.maplibre.android.MapLibre
 import org.maplibre.android.WellKnownTileServer
 import org.maplibre.android.annotations.IconFactory
+import org.maplibre.android.annotations.Marker
 import org.maplibre.android.annotations.MarkerOptions
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
@@ -77,6 +78,7 @@ fun MainScreen() {
     val context = LocalContext.current
     val styleUrl = "https://api.maptiler.com/maps/streets/style.json?key=${context.getString(R.string.maptiler_api_key)}"
     var map: MapLibreMap? by remember { mutableStateOf(null) }
+    var userMarker: Marker? by remember { mutableStateOf(null) }
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
 
     val locationCallback = remember {
@@ -86,17 +88,20 @@ fun MainScreen() {
                     map?.let {
                         val latLng = LatLng(location.latitude, location.longitude)
                         it.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 13.0))
+
+                        userMarker?.let { marker ->
+                            it.removeMarker(marker)
+                        }
+
                         val icon = IconFactory.getInstance(context).fromBitmap(
                             getBitmapFromVectorDrawable(context, R.drawable.ic_marker)!!
                         )
-                        it.addMarker(
+                        userMarker = it.addMarker(
                             MarkerOptions()
                                 .position(latLng)
                                 .icon(icon)
                         )
                     }
-                    // Stop location updates after we have a location
-                    fusedLocationClient.removeLocationUpdates(this)
                 }
             }
         }
