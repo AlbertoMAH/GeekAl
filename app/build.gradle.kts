@@ -65,6 +65,7 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.5.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.3.1")
     implementation("androidx.core:core-ktx:1.8.0")
+    implementation("androidx.appcompat:appcompat:1.7.1")
     // https://mvnrepository.com/artifact/org.maplibre.gl/android-sdk
     implementation("org.maplibre.gl:android-sdk:11.12.1")
     // https://mvnrepository.com/artifact/com.google.android.gms/play-services-location
