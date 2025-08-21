@@ -123,7 +123,9 @@ fun MainScreen() {
         ) {
             MapView(
                 onMapReady = { map = it },
-                styleUrl = styleUrl
+                styleUrl = styleUrl,
+                initialCenter = LatLng(5.3, -4.0),
+                initialZoom = 12.0
             )
             Button(
                 onClick = { /* TODO: Implement button logic */ },

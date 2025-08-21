@@ -9,14 +9,17 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import org.maplibre.android.camera.CameraUpdateFactory
+import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.MapLibreMap
-import org.maplibre.android.maps.Style
 
 @Composable
 fun MapView(
     onMapReady: (MapLibreMap) -> Unit,
-    styleUrl: String
+    styleUrl: String,
+    initialCenter: LatLng,
+    initialZoom: Double
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -24,6 +27,7 @@ fun MapView(
         MapView(context).apply {
             getMapAsync { map ->
                 map.setStyle(styleUrl) {
+                    map.moveCamera(CameraUpdateFactory.newLatLngZoom(initialCenter, initialZoom))
                     onMapReady(map)
                 }
             }
