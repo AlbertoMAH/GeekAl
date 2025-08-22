@@ -10,6 +10,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,9 +22,7 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.ModalBottomSheetLayout
 import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBackIosNew
-import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
@@ -35,7 +34,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import android.util.Log
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -52,9 +54,24 @@ import org.maplibre.android.location.modes.CameraMode
 import org.maplibre.android.location.modes.RenderMode
 import org.maplibre.android.maps.MapLibreMap
 
+import org.maplibre.android.camera.CameraPosition
+import org.maplibre.android.snapshotter.MapSnapshotter
+
+// JULES: Simple data class to hold all the form data together.
+data class RequestData(
+    val serviceType: String,
+    val vehicleMake: String,
+    val vehicleModel: String,
+    val vehicleYear: String,
+    val problemDescription: String,
+    val location: LatLng
+)
+
+// JULES: Sealed class to manage navigation state between different screens.
 sealed class Screen {
     object Map : Screen()
-    object Details : Screen()
+    data class Details(val serviceType: String) : Screen()
+    data class Confirmation(val requestData: RequestData) : Screen()
 }
 
 class MainActivity : ComponentActivity() {
@@ -63,10 +80,42 @@ class MainActivity : ComponentActivity() {
         MapLibre.getInstance(this, getString(R.string.maptiler_api_key), WellKnownTileServer.MapTiler)
         setContent {
             MaterialTheme {
+                // JULES: The state for the current screen and all collected data is lifted here,
+                // allowing it to be passed between screens.
                 var currentScreen by remember { mutableStateOf<Screen>(Screen.Map) }
-                when (currentScreen) {
-                    is Screen.Map -> MainScreen(onNavigateToDetails = { currentScreen = Screen.Details })
-                    is Screen.Details -> RequestDetailsScreen(onNavigateBack = { currentScreen = Screen.Map })
+                var serviceType by remember { mutableStateOf("Dépannage") }
+                var lastKnownLocation by remember { mutableStateOf(LatLng(5.3, -4.0)) }
+
+                when (val screen = currentScreen) {
+                    is Screen.Map -> MainScreen(
+                        onNavigateToDetails = { selectedService ->
+                            serviceType = selectedService
+                            currentScreen = Screen.Details(selectedService)
+                        },
+                        onLocationUpdate = { latLng ->
+                            lastKnownLocation = latLng
+                        }
+                    )
+                    is Screen.Details -> RequestDetailsScreen(
+                        serviceType = screen.serviceType,
+                        onNavigateBack = { currentScreen = Screen.Map },
+                        onNavigateToConfirmation = { vehicleMake, vehicleModel, vehicleYear, problemDescription ->
+                            currentScreen = Screen.Confirmation(
+                                RequestData(
+                                    serviceType = serviceType,
+                                    vehicleMake = vehicleMake,
+                                    vehicleModel = vehicleModel,
+                                    vehicleYear = vehicleYear,
+                                    problemDescription = problemDescription,
+                                    location = lastKnownLocation
+                                )
+                            )
+                        }
+                    )
+                    is Screen.Confirmation -> ConfirmationScreen(
+                        requestData = screen.requestData,
+                        onNavigateBack = { currentScreen = Screen.Details(screen.requestData.serviceType) }
+                    )
                 }
             }
         }
@@ -76,7 +125,7 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterialApi::class)
 @SuppressLint("MissingPermission")
 @Composable
-fun MainScreen(onNavigateToDetails: () -> Unit) {
+fun MainScreen(onNavigateToDetails: (String) -> Unit, onLocationUpdate: (LatLng) -> Unit) {
     val context = LocalContext.current
     val styleUrl = "https://api.maptiler.com/maps/streets/style.json?key=${context.getString(R.string.maptiler_api_key)}"
     var map: MapLibreMap? by remember { mutableStateOf(null) }
@@ -84,6 +133,7 @@ fun MainScreen(onNavigateToDetails: () -> Unit) {
 
     val sheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
     val scope = rememberCoroutineScope()
+    var selectedService by remember { mutableStateOf("Dépannage") }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -100,21 +150,24 @@ fun MainScreen(onNavigateToDetails: () -> Unit) {
     LaunchedEffect(map, hasLocationPermission) {
         if (map != null && hasLocationPermission) {
             map?.getStyle { style ->
-                map?.locationComponent?.apply {
+                map?.locationComponent?.let {
                     val locationEngineRequest = LocationEngineRequest.Builder(750)
                         .setFastestInterval(750)
                         .setPriority(LocationEngineRequest.PRIORITY_HIGH_ACCURACY)
                         .build()
 
-                    activateLocationComponent(
+                    it.activateLocationComponent(
                         LocationComponentActivationOptions.builder(context, style)
                             .useDefaultLocationEngine(true)
                             .locationEngineRequest(locationEngineRequest)
                             .build()
                     )
-                    isLocationComponentEnabled = true
-                    cameraMode = CameraMode.TRACKING
-                    renderMode = RenderMode.COMPASS
+                    it.isLocationComponentEnabled = true
+                    it.cameraMode = CameraMode.TRACKING
+                    it.renderMode = RenderMode.COMPASS
+                    it.addOnLocationClickListener {
+                        it.lastKnownLocation?.let { loc -> onLocationUpdate(LatLng(loc.latitude, loc.longitude)) }
+                    }
                 }
             }
         }
@@ -124,16 +177,19 @@ fun MainScreen(onNavigateToDetails: () -> Unit) {
         sheetState = sheetState,
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         sheetContent = {
-            ServiceSelectionSheetContent(onConfirm = {
-                scope.launch {
-                    sheetState.hide()
-                    onNavigateToDetails()
+            ServiceSelectionSheetContent(
+                initialService = selectedService,
+                onConfirm = { service ->
+                    selectedService = service
+                    scope.launch {
+                        sheetState.hide()
+                        onNavigateToDetails(service)
+                    }
                 }
-            })
+            )
         }
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Layer 1: MapView
             MapView(
                 modifier = Modifier.fillMaxSize(),
                 onMapReady = { map = it },
@@ -141,8 +197,6 @@ fun MainScreen(onNavigateToDetails: () -> Unit) {
                 initialCenter = LatLng(5.3, -4.0),
                 initialZoom = 12.0
             )
-
-            // Layer 2: UI Elements on top of the map
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -150,7 +204,6 @@ fun MainScreen(onNavigateToDetails: () -> Unit) {
                 verticalArrangement = Arrangement.Bottom,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Floating Action Button
                 FloatingActionButton(
                     onClick = {
                         locationPermissionLauncher.launch(
@@ -171,8 +224,6 @@ fun MainScreen(onNavigateToDetails: () -> Unit) {
                         tint = Color(0xFF2563EB)
                     )
                 }
-
-                // Bottom Control Panel
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -181,7 +232,6 @@ fun MainScreen(onNavigateToDetails: () -> Unit) {
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Gradient Button
                     Button(
                         onClick = {
                             scope.launch { sheetState.show() }
@@ -207,8 +257,7 @@ fun MainScreen(onNavigateToDetails: () -> Unit) {
                         }
                     }
 
-                    // Bottom Navigation
-                    var selectedItem by remember { mutableStateOf(0) }
+                    var selectedNavItem by remember { mutableStateOf(0) }
                     val items = listOf("Accueil", "Dépanneurs", "Paramètres")
                     val icons = listOf(Icons.Outlined.Home, Icons.Outlined.Build, Icons.Outlined.Settings)
 
@@ -220,8 +269,8 @@ fun MainScreen(onNavigateToDetails: () -> Unit) {
                             NavigationBarItem(
                                 icon = { Icon(icons[index], contentDescription = item) },
                                 label = { Text(item) },
-                                selected = selectedItem == index,
-                                onClick = { selectedItem = index },
+                                selected = selectedNavItem == index,
+                                onClick = { selectedNavItem = index },
                                 colors = NavigationBarItemDefaults.colors(
                                     selectedIconColor = Color(0xFF2563EB),
                                     selectedTextColor = Color(0xFF2563EB),
@@ -239,8 +288,8 @@ fun MainScreen(onNavigateToDetails: () -> Unit) {
 }
 
 @Composable
-fun ServiceSelectionSheetContent(onConfirm: () -> Unit) {
-    var selectedService by remember { mutableStateOf("Dépannage") }
+fun ServiceSelectionSheetContent(initialService: String, onConfirm: (String) -> Unit) {
+    var selectedService by remember { mutableStateOf(initialService) }
 
     Column(
         modifier = Modifier
@@ -248,7 +297,6 @@ fun ServiceSelectionSheetContent(onConfirm: () -> Unit) {
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Handle
         Box(
             modifier = Modifier
                 .padding(vertical = 8.dp)
@@ -257,14 +305,12 @@ fun ServiceSelectionSheetContent(onConfirm: () -> Unit) {
                 .clip(RoundedCornerShape(2.dp))
                 .background(Color.LightGray)
         )
-
         Text(
             text = "Sélectionnez le type de service",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(vertical = 16.dp)
         )
-
         ServiceOption(
             title = "Dépannage",
             icon = Icons.Filled.Build,
@@ -274,15 +320,13 @@ fun ServiceSelectionSheetContent(onConfirm: () -> Unit) {
         Spacer(modifier = Modifier.height(16.dp))
         ServiceOption(
             title = "Remorquage",
-            icon = Icons.Filled.Build, // Using Build icon as a placeholder
+            icon = Icons.Filled.CarCrash,
             isSelected = selectedService == "Remorquage",
             onClick = { selectedService = "Remorquage" }
         )
-
         Spacer(modifier = Modifier.height(24.dp))
-
         Button(
-            onClick = onConfirm,
+            onClick = { onConfirm(selectedService) },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
@@ -330,11 +374,15 @@ fun ServiceOption(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RequestDetailsScreen(onNavigateBack: () -> Unit) {
+fun RequestDetailsScreen(
+    serviceType: String,
+    onNavigateBack: () -> Unit,
+    onNavigateToConfirmation: (String, String, String, String) -> Unit
+) {
     var make by remember { mutableStateOf("") }
     var model by remember { mutableStateOf("") }
     var year by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf(serviceType) }
 
     Scaffold(
         topBar = {
@@ -353,7 +401,7 @@ fun RequestDetailsScreen(onNavigateBack: () -> Unit) {
         bottomBar = {
             Box(modifier = Modifier.padding(16.dp)) {
                 Button(
-                    onClick = { /* TODO: Handle send request */ },
+                    onClick = { onNavigateToConfirmation(make, model, year, description) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
@@ -416,5 +464,178 @@ fun FormInput(
             ),
             shape = RoundedCornerShape(12.dp)
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ConfirmationScreen(requestData: RequestData, onNavigateBack: () -> Unit) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Confirmation", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.Filled.ArrowBackIosNew, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFFF8FAFC).copy(alpha = 0.8f)
+                )
+            )
+        },
+        bottomBar = {
+            Box(modifier = Modifier.padding(16.dp)) {
+                Button(
+                    onClick = { /* TODO: Final Submit */ },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D7FF2)),
+                    shape = RoundedCornerShape(50)
+                ) {
+                    Text("Confirmer et envoyer", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 16.dp)
+        ) {
+            SummarySection(requestData)
+            Spacer(modifier = Modifier.height(24.dp))
+            LocationSection(requestData.location)
+        }
+    }
+}
+
+@Composable
+fun SummarySection(data: RequestData) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text(
+            text = "Résumé de la demande",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = Color.Gray
+        )
+        Column(
+            modifier = Modifier
+                .clip(RoundedCornerShape(16.dp))
+                .background(Color.White)
+                .padding(horizontal = 16.dp)
+        ) {
+            SummaryRow(icon = Icons.Filled.Build, title = "Service demandé", details = data.serviceType)
+            Divider(color = Color.LightGray.copy(alpha = 0.5f))
+            SummaryRow(icon = Icons.Filled.DirectionsCar, title = "Véhicule", details = "${data.vehicleMake} ${data.vehicleModel} ${data.vehicleYear}")
+            Divider(color = Color.LightGray.copy(alpha = 0.5f))
+            SummaryRow(icon = Icons.Filled.ReportProblem, title = "Description du problème", details = data.problemDescription)
+        }
+    }
+}
+
+@Composable
+fun LocationSection(location: LatLng) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text(
+            text = "Localisation",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = Color.Gray
+        )
+        Column(
+            modifier = Modifier
+                .clip(RoundedCornerShape(16.dp))
+                .background(Color.White)
+        ) {
+            MapSnapshot(latLng = location)
+            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Filled.LocationOn,
+                    contentDescription = "Location",
+                    tint = Color.Gray,
+                    modifier = Modifier.size(32.dp)
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text("Votre position actuelle", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                    Text("123 Main St, Anytown", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SummaryRow(icon: ImageVector, title: String, details: String) {
+    Row(modifier = Modifier.padding(vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = icon,
+            contentDescription = title,
+            tint = Color.Gray,
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(50))
+                .background(Color.LightGray.copy(alpha = 0.3f))
+                .padding(12.dp)
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Column {
+            Text(text = title, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            Text(text = details, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+@Composable
+fun MapSnapshot(latLng: LatLng) {
+    var image by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    val context = LocalContext.current
+    val styleUrl = "https://api.maptiler.com/maps/streets/style.json?key=${context.getString(R.string.maptiler_api_key)}"
+
+    LaunchedEffect(latLng) {
+        val options = MapSnapshotter.Options(500, 300)
+            .withStyle(styleUrl)
+            .withCameraPosition(
+                CameraPosition.Builder()
+                    .target(latLng)
+                    .zoom(15.0)
+                    .build()
+            )
+
+        val snapshotter = MapSnapshotter(context, options)
+        snapshotter.start(
+            { snapshot ->
+                image = snapshot.bitmap
+            },
+            { error ->
+                Log.e("MapSnapshot", "Failed to generate snapshot: $error")
+            }
+        )
+    }
+
+    if (image != null) {
+        Image(
+            bitmap = image!!.asImageBitmap(),
+            contentDescription = "Map snapshot",
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(150.dp),
+            contentScale = ContentScale.Crop
+        )
+    } else {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(150.dp)
+                .background(Color.LightGray),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
     }
 }
