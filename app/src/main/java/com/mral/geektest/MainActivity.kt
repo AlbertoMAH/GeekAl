@@ -35,10 +35,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import android.util.Log
+import android.graphics.PointF
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -610,7 +613,21 @@ fun MapSnapshot(latLng: LatLng) {
         val snapshotter = MapSnapshotter(context, options)
         snapshotter.start(
             { snapshot ->
-                image = snapshot.bitmap
+                // JULES: Drawing the marker onto the snapshot bitmap
+                val mutableBitmap = snapshot.bitmap.copy(Bitmap.Config.ARGB_8888, true)
+                val canvas = Canvas(mutableBitmap)
+                val markerDrawable = ContextCompat.getDrawable(context, R.drawable.ic_marker_pin)
+                markerDrawable?.let {
+                    val markerBitmap = it.toBitmap()
+                    val markerPosition = snapshot.pixelForLatLng(latLng)
+                    canvas.drawBitmap(
+                        markerBitmap,
+                        markerPosition.x - markerBitmap.width / 2,
+                        markerPosition.y - markerBitmap.height, // Align to bottom of the pin
+                        null
+                    )
+                }
+                image = mutableBitmap
             },
             { error ->
                 Log.e("MapSnapshot", "Failed to generate snapshot: $error")
@@ -621,7 +638,7 @@ fun MapSnapshot(latLng: LatLng) {
     if (image != null) {
         Image(
             bitmap = image!!.asImageBitmap(),
-            contentDescription = "Map snapshot",
+            contentDescription = "Map snapshot with marker",
             modifier = Modifier
                 .fillMaxWidth()
                 .height(150.dp),
