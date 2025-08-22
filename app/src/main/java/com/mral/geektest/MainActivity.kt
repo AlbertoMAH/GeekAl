@@ -25,9 +25,7 @@ import androidx.compose.material.ModalBottomSheetLayout
 import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.Build
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -76,6 +74,7 @@ sealed class Screen {
     object Map : Screen()
     data class Details(val serviceType: String) : Screen()
     data class Confirmation(val requestData: RequestData) : Screen()
+    object RequestActive : Screen()
 }
 
 class MainActivity : ComponentActivity() {
@@ -123,8 +122,10 @@ class MainActivity : ComponentActivity() {
                     )
                     is Screen.Confirmation -> ConfirmationScreen(
                         requestData = screen.requestData,
-                        onNavigateBack = { currentScreen = Screen.Details(screen.requestData.serviceType) }
+                        onNavigateBack = { currentScreen = Screen.Details(screen.requestData.serviceType) },
+                        onNavigateToActive = { currentScreen = Screen.RequestActive }
                     )
+                    is Screen.RequestActive -> RequestActiveScreen()
                 }
             }
         }
@@ -494,7 +495,7 @@ fun FormInput(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConfirmationScreen(requestData: RequestData, onNavigateBack: () -> Unit) {
+fun ConfirmationScreen(requestData: RequestData, onNavigateBack: () -> Unit, onNavigateToActive: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -512,7 +513,7 @@ fun ConfirmationScreen(requestData: RequestData, onNavigateBack: () -> Unit) {
         bottomBar = {
             Box(modifier = Modifier.padding(16.dp)) {
                 Button(
-                    onClick = { /* TODO: Final Submit */ },
+                    onClick = { onNavigateToActive() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
@@ -535,6 +536,105 @@ fun ConfirmationScreen(requestData: RequestData, onNavigateBack: () -> Unit) {
             SummarySection(requestData)
             Spacer(modifier = Modifier.height(24.dp))
             LocationSection(requestData)
+        }
+    }
+}
+
+@Composable
+fun RequestActiveScreen() {
+    Scaffold(
+        bottomBar = {
+            var selectedItem by remember { mutableStateOf(0) }
+            val items = listOf("Accueil", "Demandes", "Profil")
+            val icons = listOf(Icons.Filled.Home, Icons.Filled.List, Icons.Filled.Person)
+
+            NavigationBar {
+                items.forEachIndexed { index, item ->
+                    NavigationBarItem(
+                        icon = { Icon(icons[index], contentDescription = item) },
+                        label = { Text(item) },
+                        selected = selectedItem == index,
+                        onClick = { selectedItem = index }
+                    )
+                }
+            }
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(Color(0xFFE0F2FE))
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(90.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(Color(0xFFBAE6FD))
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Sos,
+                        contentDescription = "SOS",
+                        tint = Color(0xFF0D7FF2),
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                "Assistance en route!",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                "Un dépanneur est en chemin. Votre sécurité est notre priorité.",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                color = Color.Gray
+            )
+            Spacer(modifier = Modifier.height(32.dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.White)
+                    .padding(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Arrivée estimée", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text("15-20 min", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF0D7FF2))
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                LinearProgressIndicator(
+                    progress = 0.5f,
+                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = { /*TODO*/ },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D7FF2)),
+                shape = RoundedCornerShape(50)
+            ) {
+                Text("Voir les détails", fontSize = 18.sp)
+            }
         }
     }
 }
