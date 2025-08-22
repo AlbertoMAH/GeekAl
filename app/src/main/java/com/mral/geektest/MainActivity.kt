@@ -111,8 +111,9 @@ fun MainScreen() {
         }
     }
 
+    // JULES: The entire screen is now a Box to allow layering UI elements on top of each other.
     Box(modifier = Modifier.fillMaxSize()) {
-        // Layer 1: MapView
+        // JULES: Layer 1: The MapView serves as the background, filling the whole screen.
         MapView(
             modifier = Modifier.fillMaxSize(),
             onMapReady = { map = it },
@@ -121,7 +122,7 @@ fun MainScreen() {
             initialZoom = 12.0
         )
 
-        // Layer 2: UI Elements on top of the map
+        // JULES: Layer 2: This Column holds all the UI controls and is aligned to the bottom of the screen.
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -129,7 +130,7 @@ fun MainScreen() {
             verticalArrangement = Arrangement.Bottom,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Floating Action Button
+            // JULES: The FAB is aligned to the end of the screen, above the main bottom panel.
             FloatingActionButton(
                 onClick = {
                     locationPermissionLauncher.launch(
@@ -144,6 +145,7 @@ fun MainScreen() {
                     .padding(bottom = 16.dp),
                 containerColor = Color.White
             ) {
+                // JULES: Fixed the icon reference from Outlined to Filled to resolve a compilation error.
                 Icon(
                     imageVector = Icons.Filled.MyLocation,
                     contentDescription = "My Location",
@@ -151,7 +153,7 @@ fun MainScreen() {
                 )
             }
 
-            // Bottom Control Panel
+            // JULES: This Column is the main bottom panel, styled with a semi-transparent background and rounded corners.
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -160,7 +162,8 @@ fun MainScreen() {
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Gradient Button
+                // JULES: The Button uses a custom gradient background, applied by placing a styled Box inside a transparent Button.
+                // JULES: Added import for PaddingValues to fix a compilation error.
                 Button(
                     onClick = { /* TODO: Implement button logic */ },
                     modifier = Modifier
@@ -184,7 +187,7 @@ fun MainScreen() {
                     }
                 }
 
-                // Bottom Navigation
+                // JULES: This is the new Bottom Navigation bar, with three items as requested.
                 var selectedItem by remember { mutableStateOf(0) }
                 val items = listOf("Accueil", "Dépanneurs", "Paramètres")
                 val icons = listOf(Icons.Outlined.Home, Icons.Outlined.Construction, Icons.Outlined.Settings)

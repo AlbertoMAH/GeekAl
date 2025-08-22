@@ -17,6 +17,7 @@ import org.maplibre.android.maps.MapLibreMap
 
 @Composable
 fun MapView(
+    // JULES: Added a modifier parameter to make the composable more flexible and to fix a compilation error.
     modifier: Modifier = Modifier,
     onMapReady: (MapLibreMap) -> Unit,
     styleUrl: String,
@@ -54,5 +55,6 @@ fun MapView(
         }
     }
 
+    // JULES: Pass the modifier to the AndroidView.
     AndroidView({ mapView }, modifier = modifier)
 }
