@@ -41,9 +41,11 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -207,8 +209,7 @@ fun HomeSheetContent(onShowServiceSelection: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFFF3F4F6))
-            .padding(16.dp),
+            .background(Color(0xFFF3F4F6)),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(
@@ -219,24 +220,26 @@ fun HomeSheetContent(onShowServiceSelection: () -> Unit) {
                 .clip(RoundedCornerShape(2.dp))
                 .background(Color.LightGray)
         )
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(
-            onClick = onShowServiceSelection,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-        ) {
-            Text("Demander un dépannage")
+        Column(modifier = Modifier.padding(all = 16.dp)) {
+            Button(
+                onClick = onShowServiceSelection,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+            ) {
+                Text("Demander un dépannage")
+            }
         }
-        Spacer(modifier = Modifier.height(16.dp))
+
+        Divider(color = Color(0xFFE5E7EB), thickness = 1.dp)
 
         var selectedItem by remember { mutableStateOf(0) }
         val items = listOf("Accueil", "Dépanneurs", "Paramètres")
         val icons = listOf(Icons.Filled.Home, Icons.Filled.Construction, Icons.Filled.Settings)
 
         NavigationBar(
-            containerColor = Color.Transparent,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            containerColor = Color(0xFFF3F4F6)
         ) {
             items.forEachIndexed { index, item ->
                 NavigationBarItem(
@@ -244,6 +247,13 @@ fun HomeSheetContent(onShowServiceSelection: () -> Unit) {
                     label = { Text(item) },
                     selected = selectedItem == index,
                     onClick = { selectedItem = index },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = Color(0xFF2563EB),
+                        selectedTextColor = Color(0xFF2563EB),
+                        unselectedIconColor = Color(0xFF6B7280),
+                        unselectedTextColor = Color(0xFF6B7280),
+                        indicatorColor = Color(0xFFF3F4F6)
+                    )
                 )
             }
         }
