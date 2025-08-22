@@ -2,80 +2,77 @@ package com.mral.geektest
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.location.Geocoder
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.BottomSheetScaffold
+import androidx.compose.material.BottomSheetValue
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.ModalBottomSheetLayout
 import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.CarCrash
+import androidx.compose.material.icons.filled.Construction
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.rememberBottomSheetScaffoldState
+import androidx.compose.material.rememberBottomSheetState
 import androidx.compose.material.rememberModalBottomSheetState
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.toBitmap
 import com.mral.geektest.ui.composables.MapView
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.maplibre.android.MapLibre
 import org.maplibre.android.WellKnownTileServer
-import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.location.LocationComponentActivationOptions
 import org.maplibre.android.location.engine.LocationEngineRequest
 import org.maplibre.android.location.modes.CameraMode
 import org.maplibre.android.location.modes.RenderMode
 import org.maplibre.android.maps.MapLibreMap
-import org.maplibre.android.snapshotter.MapSnapshotter
-import java.util.*
-
-data class RequestData(
-    val serviceType: String,
-    val vehicleMake: String,
-    val vehicleModel: String,
-    val vehicleYear: String,
-    val problemDescription: String,
-    val location: LatLng,
-    val address: String
-)
-
-sealed class Screen {
-    object Map : Screen()
-    data class Details(val serviceType: String) : Screen()
-    data class Confirmation(val requestData: RequestData) : Screen()
-    object RequestActive : Screen()
-}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,83 +80,32 @@ class MainActivity : ComponentActivity() {
         MapLibre.getInstance(this, getString(R.string.maptiler_api_key), WellKnownTileServer.MapTiler)
         setContent {
             MaterialTheme {
-                var currentScreen by remember { mutableStateOf<Screen>(Screen.Map) }
-                var serviceType by remember { mutableStateOf("Dépannage") }
-                var lastKnownLocation by remember { mutableStateOf(LatLng(5.3, -4.0)) }
-                var currentAddress by remember { mutableStateOf("Loading address...") }
-                val context = LocalContext.current
-
-                LaunchedEffect(lastKnownLocation) {
-                    currentAddress = getAddressFromCoordinates(context, lastKnownLocation)
-                }
-
-                when (val screen = currentScreen) {
-                    is Screen.Map -> MainScreen(
-                        onNavigateToDetails = { selectedService ->
-                            serviceType = selectedService
-                            currentScreen = Screen.Details(selectedService)
-                        },
-                        onLocationUpdate = { latLng ->
-                            lastKnownLocation = latLng
-                        }
-                    )
-                    is Screen.Details -> RequestDetailsScreen(
-                        serviceType = screen.serviceType,
-                        onNavigateBack = { currentScreen = Screen.Map },
-                        onNavigateToConfirmation = { vehicleMake, vehicleModel, vehicleYear, problemDescription ->
-                            currentScreen = Screen.Confirmation(
-                                RequestData(
-                                    serviceType = serviceType,
-                                    vehicleMake = vehicleMake,
-                                    vehicleModel = vehicleModel,
-                                    vehicleYear = vehicleYear,
-                                    problemDescription = problemDescription,
-                                    location = lastKnownLocation,
-                                    address = currentAddress
-                                )
-                            )
-                        }
-                    )
-                    is Screen.Confirmation -> ConfirmationScreen(
-                        requestData = screen.requestData,
-                        onNavigateBack = { currentScreen = Screen.Details(screen.requestData.serviceType) },
-                        onNavigateToActive = { currentScreen = Screen.RequestActive }
-                    )
-                    is Screen.RequestActive -> RequestActiveScreen()
-                }
+                MainScreen()
             }
         }
     }
 }
 
-suspend fun getAddressFromCoordinates(context: Context, latLng: LatLng): String = withContext(Dispatchers.IO) {
-    try {
-        val geocoder = Geocoder(context, Locale.getDefault())
-        val addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
-        if (addresses?.isNotEmpty() == true) {
-            addresses[0].getAddressLine(0)
-        } else {
-            "Address not found"
-        }
-    } catch (e: Exception) {
-        Log.e("Geocoder", "Failed to get address", e)
-        "Could not retrieve address"
-    }
+sealed class SheetContentState {
+    object Home : SheetContentState()
+    data class Details(val serviceType: String) : SheetContentState()
 }
-
 
 @OptIn(ExperimentalMaterialApi::class)
 @SuppressLint("MissingPermission")
 @Composable
-fun MainScreen(onNavigateToDetails: (String) -> Unit, onLocationUpdate: (LatLng) -> Unit) {
+fun MainScreen() {
     val context = LocalContext.current
     val styleUrl = "https://api.maptiler.com/maps/streets/style.json?key=${context.getString(R.string.maptiler_api_key)}"
     var map: MapLibreMap? by remember { mutableStateOf(null) }
     var hasLocationPermission by remember { mutableStateOf(false) }
 
-    val sheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
+    val scaffoldState = rememberBottomSheetScaffoldState(
+        bottomSheetState = rememberBottomSheetState(initialValue = BottomSheetValue.Collapsed)
+    )
+    val modalSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
     val scope = rememberCoroutineScope()
-    var selectedService by remember { mutableStateOf("Dépannage") }
+    var sheetContentState by remember { mutableStateOf<SheetContentState>(SheetContentState.Home) }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -191,45 +137,51 @@ fun MainScreen(onNavigateToDetails: (String) -> Unit, onLocationUpdate: (LatLng)
                     it.isLocationComponentEnabled = true
                     it.cameraMode = CameraMode.TRACKING
                     it.renderMode = RenderMode.COMPASS
-                    it.addOnLocationClickListener {
-                        it.lastKnownLocation?.let { loc -> onLocationUpdate(LatLng(loc.latitude, loc.longitude)) }
-                    }
                 }
             }
         }
     }
 
     ModalBottomSheetLayout(
-        sheetState = sheetState,
+        sheetState = modalSheetState,
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         sheetContent = {
-            ServiceSelectionSheetContent(
-                initialService = selectedService,
-                onConfirm = { service ->
-                    selectedService = service
-                    scope.launch {
-                        sheetState.hide()
-                        onNavigateToDetails(service)
-                    }
+            ServiceSelectionSheetContent(onConfirm = { serviceType ->
+                scope.launch {
+                    modalSheetState.hide()
+                    sheetContentState = SheetContentState.Details(serviceType)
+                    scaffoldState.bottomSheetState.expand()
                 }
-            )
+            })
         }
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            MapView(
-                modifier = Modifier.fillMaxSize(),
-                onMapReady = { map = it },
-                styleUrl = styleUrl,
-                initialCenter = LatLng(5.3, -4.0),
-                initialZoom = 12.0
-            )
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.Bottom,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+        BottomSheetScaffold(
+            scaffoldState = scaffoldState,
+            sheetPeekHeight = if (sheetContentState is SheetContentState.Home) 250.dp else 0.dp,
+            sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            sheetContent = {
+                when (val state = sheetContentState) {
+                    is SheetContentState.Home -> HomeSheetContent(
+                        onShowServiceSelection = { scope.launch { modalSheetState.show() } }
+                    )
+                    is SheetContentState.Details -> RequestDetailsSheetContent(
+                        serviceType = state.serviceType,
+                        onSend = {
+                            // TODO: Implement final submission
+                        }
+                    )
+                }
+            }
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                MapView(
+                    modifier = Modifier.fillMaxSize(),
+                    onMapReady = { map = it },
+                    styleUrl = styleUrl,
+                    initialCenter = LatLng(5.3, -4.0),
+                    initialZoom = 12.0
+                )
+
                 FloatingActionButton(
                     onClick = {
                         locationPermissionLauncher.launch(
@@ -240,73 +192,10 @@ fun MainScreen(onNavigateToDetails: (String) -> Unit, onLocationUpdate: (LatLng)
                         )
                     },
                     modifier = Modifier
-                        .align(Alignment.End)
-                        .padding(bottom = 16.dp),
-                    containerColor = Color.White
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.MyLocation,
-                        contentDescription = "My Location",
-                        tint = Color(0xFF2563EB)
-                    )
-                }
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(Color.White.copy(alpha = 0.8f))
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Button(
-                        onClick = {
-                            scope.launch { sheetState.show() }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                        contentPadding = PaddingValues()
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    brush = Brush.horizontalGradient(
-                                        colors = listOf(Color(0xFF3B82F6), Color(0xFF6366F1))
-                                    )
-                                )
-                                .padding(vertical = 16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("Demander un dépannage", color = Color.White)
-                        }
-                    }
-
-                    var selectedNavItem by remember { mutableStateOf(0) }
-                    val items = listOf("Accueil", "Dépanneurs", "Paramètres")
-                    val icons = listOf(Icons.Outlined.Home, Icons.Outlined.Build, Icons.Outlined.Settings)
-
-                    NavigationBar(
-                        containerColor = Color.Transparent,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items.forEachIndexed { index, item ->
-                            NavigationBarItem(
-                                icon = { Icon(icons[index], contentDescription = item) },
-                                label = { Text(item) },
-                                selected = selectedNavItem == index,
-                                onClick = { selectedNavItem = index },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = Color(0xFF2563EB),
-                                    selectedTextColor = Color(0xFF2563EB),
-                                    unselectedIconColor = Color.Gray,
-                                    unselectedTextColor = Color.Gray,
-                                    indicatorColor = Color.Transparent
-                                )
-                            )
-                        }
-                    }
+                    Icon(Icons.Filled.MyLocation, "My Location")
                 }
             }
         }
@@ -314,8 +203,56 @@ fun MainScreen(onNavigateToDetails: (String) -> Unit, onLocationUpdate: (LatLng)
 }
 
 @Composable
-fun ServiceSelectionSheetContent(initialService: String, onConfirm: (String) -> Unit) {
-    var selectedService by remember { mutableStateOf(initialService) }
+fun HomeSheetContent(onShowServiceSelection: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFFF3F4F6))
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .padding(vertical = 8.dp)
+                .height(4.dp)
+                .fillMaxWidth(0.15f)
+                .clip(RoundedCornerShape(2.dp))
+                .background(Color.LightGray)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = onShowServiceSelection,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+        ) {
+            Text("Demander un dépannage")
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+
+        var selectedItem by remember { mutableStateOf(0) }
+        val items = listOf("Accueil", "Dépanneurs", "Paramètres")
+        val icons = listOf(Icons.Filled.Home, Icons.Filled.Construction, Icons.Filled.Settings)
+
+        NavigationBar(
+            containerColor = Color.Transparent,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items.forEachIndexed { index, item ->
+                NavigationBarItem(
+                    icon = { Icon(icons[index], contentDescription = item) },
+                    label = { Text(item) },
+                    selected = selectedItem == index,
+                    onClick = { selectedItem = index },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ServiceSelectionSheetContent(onConfirm: (String) -> Unit) {
+    var selectedService by remember { mutableStateOf("Dépannage") }
 
     Column(
         modifier = Modifier
@@ -356,10 +293,86 @@ fun ServiceSelectionSheetContent(initialService: String, onConfirm: (String) -> 
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D7FF2)),
-            shape = RoundedCornerShape(50)
         ) {
-            Text("Confirmer", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text("Confirmer")
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RequestDetailsSheetContent(serviceType: String, onSend: () -> Unit) {
+    var make by remember { mutableStateOf("") }
+    var model by remember { mutableStateOf("") }
+    var year by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf(serviceType) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+            .padding(16.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .padding(vertical = 8.dp)
+                .height(4.dp)
+                .fillMaxWidth(0.15f)
+                .clip(RoundedCornerShape(2.dp))
+                .background(Color.LightGray)
+                .align(Alignment.CenterHorizontally)
+        )
+        Text(
+            "Détails de votre demande",
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+            OutlinedTextField(
+                value = make,
+                onValueChange = { make = it },
+                label = { Text("Marque") },
+                placeholder = { Text("Ex: Peugeot") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = model,
+                onValueChange = { model = it },
+                label = { Text("Modèle") },
+                placeholder = { Text("Ex: 208") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = year,
+                onValueChange = { year = it },
+                label = { Text("Année") },
+                placeholder = { Text("Ex: 2022") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = description,
+                onValueChange = { description = it },
+                label = { Text("Description du problème") },
+                placeholder = { Text("Décrivez le problème ou la raison de votre demande...") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 4
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = onSend,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+            ) {
+                Text("Envoyer la demande")
+            }
         }
     }
 }
@@ -395,385 +408,5 @@ fun ServiceOption(
         }
         Spacer(modifier = Modifier.padding(8.dp))
         Text(text = title, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun RequestDetailsScreen(
-    serviceType: String,
-    onNavigateBack: () -> Unit,
-    onNavigateToConfirmation: (String, String, String, String) -> Unit
-) {
-    var make by remember { mutableStateOf("") }
-    var model by remember { mutableStateOf("") }
-    var year by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf(serviceType) }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Détails de la demande", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Filled.ArrowBackIosNew, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFF8FAFC).copy(alpha = 0.8f)
-                )
-            )
-        },
-        bottomBar = {
-            Box(modifier = Modifier.padding(16.dp)) {
-                Button(
-                    onClick = { onNavigateToConfirmation(make, model, year, description) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D7FF2)),
-                    shape = RoundedCornerShape(50)
-                ) {
-                    Text("Envoyer la demande", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState())
-        ) {
-            Text(
-                text = "Informations sur votre véhicule",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(vertical = 16.dp)
-            )
-
-            FormInput(label = "Marque", value = make, onValueChange = { make = it }, placeholder = "Ex: Peugeot")
-            Spacer(modifier = Modifier.height(16.dp))
-            FormInput(label = "Modèle", value = model, onValueChange = { model = it }, placeholder = "Ex: 208")
-            Spacer(modifier = Modifier.height(16.dp))
-            FormInput(label = "Année", value = year, onValueChange = { year = it }, placeholder = "Ex: 2022")
-            Spacer(modifier = Modifier.height(16.dp))
-            FormInput(label = "Description du problème", value = description, onValueChange = { description = it }, placeholder = "Décrivez le problème ou la raison de votre demande...", singleLine = false, minLines = 4)
-        }
-    }
-}
-
-@Composable
-fun FormInput(
-    label: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-    placeholder: String,
-    singleLine: Boolean = true,
-    minLines: Int = 1
-) {
-    Column {
-        Text(text = label, style = MaterialTheme.typography.bodySmall, color = Color.Gray, modifier = Modifier.padding(bottom = 8.dp))
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            placeholder = { Text(placeholder) },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = singleLine,
-            minLines = minLines,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color(0xFF0D7FF2),
-                unfocusedBorderColor = Color.Transparent,
-                focusedContainerColor = Color(0xFFEEF2F7),
-                unfocusedContainerColor = Color(0xFFEEF2F7)
-            ),
-            shape = RoundedCornerShape(12.dp)
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ConfirmationScreen(requestData: RequestData, onNavigateBack: () -> Unit, onNavigateToActive: () -> Unit) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Confirmation", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Filled.ArrowBackIosNew, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFF8FAFC).copy(alpha = 0.8f)
-                )
-            )
-        },
-        bottomBar = {
-            Box(modifier = Modifier.padding(16.dp)) {
-                Button(
-                    onClick = { onNavigateToActive() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D7FF2)),
-                    shape = RoundedCornerShape(50)
-                ) {
-                    Text("Confirmer et envoyer", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState())
-                .padding(bottom = 16.dp)
-        ) {
-            SummarySection(requestData)
-            Spacer(modifier = Modifier.height(24.dp))
-            LocationSection(requestData)
-        }
-    }
-}
-
-@Composable
-fun RequestActiveScreen() {
-    Scaffold(
-        bottomBar = {
-            var selectedItem by remember { mutableStateOf(0) }
-            val items = listOf("Accueil", "Demandes", "Profil")
-            val icons = listOf(Icons.Filled.Home, Icons.Filled.List, Icons.Filled.Person)
-
-            NavigationBar {
-                items.forEachIndexed { index, item ->
-                    NavigationBarItem(
-                        icon = { Icon(icons[index], contentDescription = item) },
-                        label = { Text(item) },
-                        selected = selectedItem == index,
-                        onClick = { selectedItem = index }
-                    )
-                }
-            }
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(Color(0xFFE0F2FE))
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(90.dp)
-                        .clip(RoundedCornerShape(50))
-                        .background(Color(0xFFBAE6FD))
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Sos,
-                        contentDescription = "SOS",
-                        tint = Color(0xFF0D7FF2),
-                        modifier = Modifier.size(40.dp)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(32.dp))
-            Text(
-                "Assistance en route!",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                "Un dépanneur est en chemin. Votre sécurité est notre priorité.",
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center,
-                color = Color.Gray
-            )
-            Spacer(modifier = Modifier.height(32.dp))
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color.White)
-                    .padding(16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Arrivée estimée", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                    Text("15-20 min", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF0D7FF2))
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                LinearProgressIndicator(
-                    progress = 0.5f,
-                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = { /*TODO*/ },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D7FF2)),
-                shape = RoundedCornerShape(50)
-            ) {
-                Text("Voir les détails", fontSize = 18.sp)
-            }
-        }
-    }
-}
-
-@Composable
-fun SummarySection(data: RequestData) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text(
-            text = "Résumé de la demande",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = Color.Gray
-        )
-        Column(
-            modifier = Modifier
-                .clip(RoundedCornerShape(16.dp))
-                .background(Color.White)
-                .padding(horizontal = 16.dp)
-        ) {
-            SummaryRow(icon = Icons.Filled.Build, title = "Service demandé", details = data.serviceType)
-            Divider(color = Color.LightGray.copy(alpha = 0.5f))
-            SummaryRow(icon = Icons.Filled.DirectionsCar, title = "Véhicule", details = "${data.vehicleMake} ${data.vehicleModel} ${data.vehicleYear}")
-            Divider(color = Color.LightGray.copy(alpha = 0.5f))
-            SummaryRow(icon = Icons.Filled.ReportProblem, title = "Description du problème", details = data.problemDescription)
-        }
-    }
-}
-
-@Composable
-fun LocationSection(requestData: RequestData) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text(
-            text = "Localisation",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = Color.Gray
-        )
-        Column(
-            modifier = Modifier
-                .clip(RoundedCornerShape(16.dp))
-                .background(Color.White)
-        ) {
-            MapSnapshot(latLng = requestData.location)
-            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Filled.LocationOn,
-                    contentDescription = "Location",
-                    tint = Color.Gray,
-                    modifier = Modifier.size(32.dp)
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                Column {
-                    Text("Votre position actuelle", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                    Text(requestData.address, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun SummaryRow(icon: ImageVector, title: String, details: String) {
-    Row(modifier = Modifier.padding(vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            imageVector = icon,
-            contentDescription = title,
-            tint = Color.Gray,
-            modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(50))
-                .background(Color.LightGray.copy(alpha = 0.3f))
-                .padding(12.dp)
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Column {
-            Text(text = title, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-            Text(text = details, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-        }
-    }
-}
-
-@Composable
-fun MapSnapshot(latLng: LatLng) {
-    var image by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
-    val context = LocalContext.current
-    val styleUrl = "https://api.maptiler.com/maps/streets/style.json?key=${context.getString(R.string.maptiler_api_key)}"
-
-    LaunchedEffect(latLng) {
-        val options = MapSnapshotter.Options(500, 300)
-            .withStyle(styleUrl)
-            .withCameraPosition(
-                CameraPosition.Builder()
-                    .target(latLng)
-                    .zoom(15.0)
-                    .build()
-            )
-
-        val snapshotter = MapSnapshotter(context, options)
-        snapshotter.start(
-            { snapshot ->
-                val mutableBitmap = snapshot.bitmap.copy(Bitmap.Config.ARGB_8888, true)
-                val canvas = Canvas(mutableBitmap)
-                val markerDrawable = ContextCompat.getDrawable(context, R.drawable.ic_marker_pin)
-                markerDrawable?.let {
-                    val markerBitmap = it.toBitmap()
-                    val markerPosition = snapshot.pixelForLatLng(latLng)
-                    canvas.drawBitmap(
-                        markerBitmap,
-                        markerPosition.x - markerBitmap.width / 2,
-                        markerPosition.y - markerBitmap.height, // Align to bottom of the pin
-                        null
-                    )
-                }
-                image = mutableBitmap
-            },
-            { error ->
-                Log.e("MapSnapshot", "Failed to generate snapshot: $error")
-            }
-        )
-    }
-
-    if (image != null) {
-        Image(
-            bitmap = image!!.asImageBitmap(),
-            contentDescription = "Map snapshot with marker",
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(150.dp),
-            contentScale = ContentScale.Crop
-        )
-    } else {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(150.dp)
-                .background(Color.LightGray),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
-        }
     }
 }
