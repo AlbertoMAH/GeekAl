@@ -5,7 +5,9 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.location.Geocoder
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -34,43 +36,42 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import android.util.Log
-import android.graphics.PointF
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 import com.mral.geektest.ui.composables.MapView
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.maplibre.android.MapLibre
 import org.maplibre.android.WellKnownTileServer
+import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.location.LocationComponentActivationOptions
 import org.maplibre.android.location.engine.LocationEngineRequest
 import org.maplibre.android.location.modes.CameraMode
 import org.maplibre.android.location.modes.RenderMode
 import org.maplibre.android.maps.MapLibreMap
-
-import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.snapshotter.MapSnapshotter
+import java.util.*
 
-// JULES: Simple data class to hold all the form data together.
 data class RequestData(
     val serviceType: String,
     val vehicleMake: String,
     val vehicleModel: String,
     val vehicleYear: String,
     val problemDescription: String,
-    val location: LatLng
+    val location: LatLng,
+    val address: String
 )
 
-// JULES: Sealed class to manage navigation state between different screens.
 sealed class Screen {
     object Map : Screen()
     data class Details(val serviceType: String) : Screen()
@@ -83,11 +84,15 @@ class MainActivity : ComponentActivity() {
         MapLibre.getInstance(this, getString(R.string.maptiler_api_key), WellKnownTileServer.MapTiler)
         setContent {
             MaterialTheme {
-                // JULES: The state for the current screen and all collected data is lifted here,
-                // allowing it to be passed between screens.
                 var currentScreen by remember { mutableStateOf<Screen>(Screen.Map) }
                 var serviceType by remember { mutableStateOf("Dépannage") }
                 var lastKnownLocation by remember { mutableStateOf(LatLng(5.3, -4.0)) }
+                var currentAddress by remember { mutableStateOf("Loading address...") }
+                val context = LocalContext.current
+
+                LaunchedEffect(lastKnownLocation) {
+                    currentAddress = getAddressFromCoordinates(context, lastKnownLocation)
+                }
 
                 when (val screen = currentScreen) {
                     is Screen.Map -> MainScreen(
@@ -110,7 +115,8 @@ class MainActivity : ComponentActivity() {
                                     vehicleModel = vehicleModel,
                                     vehicleYear = vehicleYear,
                                     problemDescription = problemDescription,
-                                    location = lastKnownLocation
+                                    location = lastKnownLocation,
+                                    address = currentAddress
                                 )
                             )
                         }
@@ -124,6 +130,22 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
+suspend fun getAddressFromCoordinates(context: Context, latLng: LatLng): String = withContext(Dispatchers.IO) {
+    try {
+        val geocoder = Geocoder(context, Locale.getDefault())
+        val addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
+        if (addresses?.isNotEmpty() == true) {
+            addresses[0].getAddressLine(0)
+        } else {
+            "Address not found"
+        }
+    } catch (e: Exception) {
+        Log.e("Geocoder", "Failed to get address", e)
+        "Could not retrieve address"
+    }
+}
+
 
 @OptIn(ExperimentalMaterialApi::class)
 @SuppressLint("MissingPermission")
@@ -512,7 +534,7 @@ fun ConfirmationScreen(requestData: RequestData, onNavigateBack: () -> Unit) {
         ) {
             SummarySection(requestData)
             Spacer(modifier = Modifier.height(24.dp))
-            LocationSection(requestData.location)
+            LocationSection(requestData)
         }
     }
 }
@@ -542,7 +564,7 @@ fun SummarySection(data: RequestData) {
 }
 
 @Composable
-fun LocationSection(location: LatLng) {
+fun LocationSection(requestData: RequestData) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
             text = "Localisation",
@@ -555,7 +577,7 @@ fun LocationSection(location: LatLng) {
                 .clip(RoundedCornerShape(16.dp))
                 .background(Color.White)
         ) {
-            MapSnapshot(latLng = location)
+            MapSnapshot(latLng = requestData.location)
             Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Filled.LocationOn,
@@ -566,7 +588,7 @@ fun LocationSection(location: LatLng) {
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
                     Text("Votre position actuelle", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                    Text("123 Main St, Anytown", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                    Text(requestData.address, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -613,7 +635,6 @@ fun MapSnapshot(latLng: LatLng) {
         val snapshotter = MapSnapshotter(context, options)
         snapshotter.start(
             { snapshot ->
-                // JULES: Drawing the marker onto the snapshot bitmap
                 val mutableBitmap = snapshot.bitmap.copy(Bitmap.Config.ARGB_8888, true)
                 val canvas = Canvas(mutableBitmap)
                 val markerDrawable = ContextCompat.getDrawable(context, R.drawable.ic_marker_pin)
