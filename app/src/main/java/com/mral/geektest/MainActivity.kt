@@ -10,57 +10,35 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.background
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.ModalBottomSheetLayout
 import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.rememberModalBottomSheetState
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mral.geektest.ui.composables.MapView
@@ -74,13 +52,22 @@ import org.maplibre.android.location.modes.CameraMode
 import org.maplibre.android.location.modes.RenderMode
 import org.maplibre.android.maps.MapLibreMap
 
+sealed class Screen {
+    object Map : Screen()
+    object Details : Screen()
+}
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         MapLibre.getInstance(this, getString(R.string.maptiler_api_key), WellKnownTileServer.MapTiler)
         setContent {
             MaterialTheme {
-                MainScreen()
+                var currentScreen by remember { mutableStateOf<Screen>(Screen.Map) }
+                when (currentScreen) {
+                    is Screen.Map -> MainScreen(onNavigateToDetails = { currentScreen = Screen.Details })
+                    is Screen.Details -> RequestDetailsScreen(onNavigateBack = { currentScreen = Screen.Map })
+                }
             }
         }
     }
@@ -89,7 +76,7 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterialApi::class)
 @SuppressLint("MissingPermission")
 @Composable
-fun MainScreen() {
+fun MainScreen(onNavigateToDetails: () -> Unit) {
     val context = LocalContext.current
     val styleUrl = "https://api.maptiler.com/maps/streets/style.json?key=${context.getString(R.string.maptiler_api_key)}"
     var map: MapLibreMap? by remember { mutableStateOf(null) }
@@ -137,7 +124,12 @@ fun MainScreen() {
         sheetState = sheetState,
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         sheetContent = {
-            ServiceSelectionSheetContent()
+            ServiceSelectionSheetContent(onConfirm = {
+                scope.launch {
+                    sheetState.hide()
+                    onNavigateToDetails()
+                }
+            })
         }
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -247,7 +239,7 @@ fun MainScreen() {
 }
 
 @Composable
-fun ServiceSelectionSheetContent() {
+fun ServiceSelectionSheetContent(onConfirm: () -> Unit) {
     var selectedService by remember { mutableStateOf("Dépannage") }
 
     Column(
@@ -290,7 +282,7 @@ fun ServiceSelectionSheetContent() {
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = { /* TODO: Handle confirmation */ },
+            onClick = onConfirm,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
@@ -333,5 +325,96 @@ fun ServiceOption(
         }
         Spacer(modifier = Modifier.padding(8.dp))
         Text(text = title, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RequestDetailsScreen(onNavigateBack: () -> Unit) {
+    var make by remember { mutableStateOf("") }
+    var model by remember { mutableStateOf("") }
+    var year by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Détails de la demande", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.Filled.ArrowBackIosNew, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFFF8FAFC).copy(alpha = 0.8f)
+                )
+            )
+        },
+        bottomBar = {
+            Box(modifier = Modifier.padding(16.dp)) {
+                Button(
+                    onClick = { /* TODO: Handle send request */ },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D7FF2)),
+                    shape = RoundedCornerShape(50)
+                ) {
+                    Text("Envoyer la demande", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            Text(
+                text = "Informations sur votre véhicule",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(vertical = 16.dp)
+            )
+
+            FormInput(label = "Marque", value = make, onValueChange = { make = it }, placeholder = "Ex: Peugeot")
+            Spacer(modifier = Modifier.height(16.dp))
+            FormInput(label = "Modèle", value = model, onValueChange = { model = it }, placeholder = "Ex: 208")
+            Spacer(modifier = Modifier.height(16.dp))
+            FormInput(label = "Année", value = year, onValueChange = { year = it }, placeholder = "Ex: 2022")
+            Spacer(modifier = Modifier.height(16.dp))
+            FormInput(label = "Description du problème", value = description, onValueChange = { description = it }, placeholder = "Décrivez le problème ou la raison de votre demande...", singleLine = false, minLines = 4)
+        }
+    }
+}
+
+@Composable
+fun FormInput(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    singleLine: Boolean = true,
+    minLines: Int = 1
+) {
+    Column {
+        Text(text = label, style = MaterialTheme.typography.bodySmall, color = Color.Gray, modifier = Modifier.padding(bottom = 8.dp))
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = { Text(placeholder) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = singleLine,
+            minLines = minLines,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color(0xFF0D7FF2),
+                unfocusedBorderColor = Color.Transparent,
+                focusedContainerColor = Color(0xFFEEF2F7),
+                unfocusedContainerColor = Color(0xFFEEF2F7)
+            ),
+            shape = RoundedCornerShape(12.dp)
+        )
     }
 }
