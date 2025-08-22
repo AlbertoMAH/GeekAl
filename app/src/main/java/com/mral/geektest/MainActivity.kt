@@ -12,14 +12,17 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.BottomSheetScaffold
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.rememberBottomSheetScaffoldState
 import androidx.compose.material3.Button
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -53,6 +56,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterialApi::class)
 @SuppressLint("MissingPermission")
 @Composable
 fun MainScreen() {
@@ -60,6 +64,7 @@ fun MainScreen() {
     val styleUrl = "https://api.maptiler.com/maps/streets/style.json?key=${context.getString(R.string.maptiler_api_key)}"
     var map: MapLibreMap? by remember { mutableStateOf(null) }
     var hasLocationPermission by remember { mutableStateOf(false) }
+    val scaffoldState = rememberBottomSheetScaffoldState()
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -96,7 +101,24 @@ fun MainScreen() {
         }
     }
 
-    Scaffold(
+    // JULES: Replaced the original Scaffold with BottomSheetScaffold to implement the bottom sheet UI.
+    BottomSheetScaffold(
+        scaffoldState = scaffoldState,
+        // JULES: The content of the bottom sheet.
+        sheetContent = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                // JULES: Moved the button here and renamed its text as requested.
+                Button(onClick = { /* TODO: Implement button logic */ }) {
+                    Text("depannez-moi")
+                }
+            }
+        },
+        // JULES: The FloatingActionButton is placed here to be docked above the bottom sheet.
         floatingActionButton = {
             FloatingActionButton(onClick = {
                 locationPermissionLauncher.launch(
@@ -110,6 +132,7 @@ fun MainScreen() {
             }
         }
     ) { paddingValues ->
+        // JULES: The main content of the screen (the map) goes here.
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -123,14 +146,6 @@ fun MainScreen() {
                 initialCenter = LatLng(5.3, -4.0),
                 initialZoom = 12.0
             )
-            Button(
-                onClick = { /* TODO: Implement button logic */ },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(16.dp)
-            ) {
-                Text("Demander un dépannage")
-            }
         }
     }
 }
