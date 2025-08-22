@@ -41,6 +41,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -93,7 +94,7 @@ sealed class SheetContentState {
     data class Details(val serviceType: String) : SheetContentState()
 }
 
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
 @SuppressLint("MissingPermission")
 @Composable
 fun MainScreen() {
@@ -101,6 +102,7 @@ fun MainScreen() {
     val styleUrl = "https://api.maptiler.com/maps/streets/style.json?key=${context.getString(R.string.maptiler_api_key)}"
     var map: MapLibreMap? by remember { mutableStateOf(null) }
     var hasLocationPermission by remember { mutableStateOf(false) }
+    var selectedNavItem by remember { mutableStateOf(0) }
 
     val scaffoldState = rememberBottomSheetScaffoldState(
         bottomSheetState = rememberBottomSheetState(initialValue = BottomSheetValue.Collapsed)
@@ -144,62 +146,99 @@ fun MainScreen() {
         }
     }
 
-    ModalBottomSheetLayout(
-        sheetState = modalSheetState,
-        sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        sheetContent = {
-            ServiceSelectionSheetContent(onConfirm = { serviceType ->
-                scope.launch {
-                    modalSheetState.hide()
-                    sheetContentState = SheetContentState.Details(serviceType)
-                    scaffoldState.bottomSheetState.expand()
-                }
-            })
+    Scaffold(
+        bottomBar = {
+            AppBottomNavigation(
+                selectedItem = selectedNavItem,
+                onItemSelected = { selectedNavItem = it }
+            )
         }
-    ) {
-        BottomSheetScaffold(
-            scaffoldState = scaffoldState,
-            sheetPeekHeight = if (sheetContentState is SheetContentState.Home) 250.dp else 0.dp,
+    ) { paddingValues ->
+        ModalBottomSheetLayout(
+            sheetState = modalSheetState,
             sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
             sheetContent = {
-                when (val state = sheetContentState) {
-                    is SheetContentState.Home -> HomeSheetContent(
-                        onShowServiceSelection = { scope.launch { modalSheetState.show() } }
-                    )
-                    is SheetContentState.Details -> RequestDetailsSheetContent(
-                        serviceType = state.serviceType,
-                        onSend = {
-                            // TODO: Implement final submission
-                        }
-                    )
-                }
+                ServiceSelectionSheetContent(onConfirm = { serviceType ->
+                    scope.launch {
+                        modalSheetState.hide()
+                        sheetContentState = SheetContentState.Details(serviceType)
+                        scaffoldState.bottomSheetState.expand()
+                    }
+                })
             }
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                MapView(
-                    modifier = Modifier.fillMaxSize(),
-                    onMapReady = { map = it },
-                    styleUrl = styleUrl,
-                    initialCenter = LatLng(5.3, -4.0),
-                    initialZoom = 12.0
-                )
-
-                FloatingActionButton(
-                    onClick = {
-                        locationPermissionLauncher.launch(
-                            arrayOf(
-                                Manifest.permission.ACCESS_FINE_LOCATION,
-                                Manifest.permission.ACCESS_COARSE_LOCATION
-                            )
+            BottomSheetScaffold(
+                modifier = Modifier.padding(paddingValues),
+                scaffoldState = scaffoldState,
+                sheetPeekHeight = if (sheetContentState is SheetContentState.Home) 150.dp else 0.dp,
+                sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                sheetContent = {
+                    when (val state = sheetContentState) {
+                        is SheetContentState.Home -> HomeSheetContent(
+                            onShowServiceSelection = { scope.launch { modalSheetState.show() } }
                         )
-                    },
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(16.dp)
-                ) {
-                    Icon(Icons.Filled.MyLocation, "My Location")
+                        is SheetContentState.Details -> RequestDetailsSheetContent(
+                            serviceType = state.serviceType,
+                            onSend = {
+                                // TODO: Implement final submission
+                            }
+                        )
+                    }
+                }
+            ) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    MapView(
+                        modifier = Modifier.fillMaxSize(),
+                        onMapReady = { map = it },
+                        styleUrl = styleUrl,
+                        initialCenter = LatLng(5.3, -4.0),
+                        initialZoom = 12.0
+                    )
+
+                    FloatingActionButton(
+                        onClick = {
+                            locationPermissionLauncher.launch(
+                                arrayOf(
+                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                                )
+                            )
+                        },
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(16.dp)
+                    ) {
+                        Icon(Icons.Filled.MyLocation, "My Location")
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun AppBottomNavigation(selectedItem: Int, onItemSelected: (Int) -> Unit) {
+    val items = listOf("Accueil", "Dépanneurs", "Paramètres")
+    val icons = listOf(Icons.Filled.Home, Icons.Filled.Construction, Icons.Filled.Settings)
+
+    NavigationBar(
+        modifier = Modifier.fillMaxWidth(),
+        containerColor = MaterialTheme.colorScheme.surface
+    ) {
+        items.forEachIndexed { index, item ->
+            NavigationBarItem(
+                icon = { Icon(icons[index], contentDescription = item) },
+                label = { Text(item) },
+                selected = selectedItem == index,
+                onClick = { onItemSelected(index) },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    indicatorColor = MaterialTheme.colorScheme.surface
+                )
+            )
         }
     }
 }
@@ -228,33 +267,6 @@ fun HomeSheetContent(onShowServiceSelection: () -> Unit) {
                     .height(56.dp),
             ) {
                 Text("Demander un dépannage")
-            }
-        }
-
-        Divider(color = Color(0xFFE5E7EB), thickness = 1.dp)
-
-        var selectedItem by remember { mutableStateOf(0) }
-        val items = listOf("Accueil", "Dépanneurs", "Paramètres")
-        val icons = listOf(Icons.Filled.Home, Icons.Filled.Construction, Icons.Filled.Settings)
-
-        NavigationBar(
-            modifier = Modifier.fillMaxWidth(),
-            containerColor = Color(0xFFF3F4F6)
-        ) {
-            items.forEachIndexed { index, item ->
-                NavigationBarItem(
-                    icon = { Icon(icons[index], contentDescription = item) },
-                    label = { Text(item) },
-                    selected = selectedItem == index,
-                    onClick = { selectedItem = index },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color(0xFF2563EB),
-                        selectedTextColor = Color(0xFF2563EB),
-                        unselectedIconColor = Color(0xFF6B7280),
-                        unselectedTextColor = Color(0xFF6B7280),
-                        indicatorColor = Color(0xFFF3F4F6)
-                    )
-                )
             }
         }
     }
