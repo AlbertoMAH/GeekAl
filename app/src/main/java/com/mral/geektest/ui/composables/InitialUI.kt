@@ -14,7 +14,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+sealed class BottomSheetState {
+    object Hidden : BottomSheetState()
+    object Searching : BottomSheetState()
+    object ProvidersList : BottomSheetState()
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -23,9 +30,8 @@ fun InitialUI() {
     val items = listOf("Carte", "Demandes", "Profil")
     val icons = listOf(Icons.Filled.Map, Icons.Filled.Build, Icons.Filled.Person)
 
-    val sheetState = rememberModalBottomSheetState()
-    var showBottomSheet by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
+    var bottomSheetState by remember { mutableStateOf<BottomSheetState>(BottomSheetState.Hidden) }
+    val modalSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Scaffold(
         topBar = { TopBar() },
@@ -80,7 +86,7 @@ fun InitialUI() {
             }
 
             Button(
-                onClick = { showBottomSheet = true },
+                onClick = { bottomSheetState = BottomSheetState.Searching },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
@@ -93,20 +99,29 @@ fun InitialUI() {
         }
     }
 
-    if (showBottomSheet) {
+    if (bottomSheetState !is BottomSheetState.Hidden) {
         ModalBottomSheet(
-            onDismissRequest = { showBottomSheet = false },
-            sheetState = sheetState,
+            onDismissRequest = { bottomSheetState = BottomSheetState.Hidden },
+            sheetState = modalSheetState,
             containerColor = Color.White,
-            scrimColor = Color.Black.copy(alpha = 0.5f) // Dark overlay
+            scrimColor = Color.Black.copy(alpha = 0.5f)
         ) {
-            SearchInProgressSheetContent(onClose = {
-                scope.launch { sheetState.hide() }.invokeOnCompletion {
-                    if (!sheetState.isVisible) {
-                        showBottomSheet = false
-                    }
+            when (bottomSheetState) {
+                is BottomSheetState.Searching -> {
+                    SearchInProgressSheetContent(onClose = { bottomSheetState = BottomSheetState.Hidden })
                 }
-            })
+                is BottomSheetState.ProvidersList -> {
+                    ServiceProvidersSheetContent(onClose = { bottomSheetState = BottomSheetState.Hidden })
+                }
+                else -> {} // Should not happen
+            }
+        }
+    }
+
+    LaunchedEffect(bottomSheetState) {
+        if (bottomSheetState is BottomSheetState.Searching) {
+            delay(5000)
+            bottomSheetState = BottomSheetState.ProvidersList
         }
     }
 }
