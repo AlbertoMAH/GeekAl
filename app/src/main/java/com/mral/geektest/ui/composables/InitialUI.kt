@@ -42,15 +42,6 @@ fun InitialUI() {
                     )
                 }
             }
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { /* TODO: My Location action */ },
-                containerColor = Color(0xFF3B82F6), // blue-500 from tailwind
-                shape = CircleShape
-            ) {
-                Icon(Icons.Filled.MyLocation, contentDescription = "My Location", tint = Color.White)
-            }
         }
     ) { paddingValues ->
         Column(
@@ -59,13 +50,29 @@ fun InitialUI() {
                 .fillMaxSize()
                 .background(Color(0xFFF3F4F6)) // gray-100 from tailwind
         ) {
-            // This Box represents the map area.
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .background(Color.LightGray)
-            )
+            ) {
+                // This Box represents the map area.
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.LightGray)
+                )
+
+                FloatingActionButton(
+                    onClick = { /* TODO: My Location action */ },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp),
+                    containerColor = Color(0xFF3B82F6), // blue-500 from tailwind
+                    shape = CircleShape
+                ) {
+                    Icon(Icons.Filled.MyLocation, contentDescription = "My Location", tint = Color.White)
+                }
+            }
 
             Button(
                 onClick = { /* TODO: "DÉPANNEZ-MOI" action */ },
