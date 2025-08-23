@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace = "com.mral.geektest"
-    compileSdk = 34
+    compileSdk = 36
     
     defaultConfig {
         applicationId = "com.mral.geektest"
         minSdk = 29
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
         
@@ -55,17 +55,17 @@ dependencies {
     implementation(platform("androidx.compose:compose-bom:2024.01.00"))
 
     implementation("androidx.compose.ui:ui")
-    implementation("androidx.activity:activity-compose:1.5.1")
+    implementation("androidx.activity:activity-compose:1.10.1")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.ui:ui-graphics")
     debugImplementation("androidx.compose.ui:ui-tooling")
     implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.material:material:1.6.8")
-    implementation("androidx.compose.material:material-icons-extended:1.6.8")
+    implementation("androidx.compose.material:material:1.9.0")
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
     implementation("io.coil-kt:coil-compose:2.5.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.3.1")
-    implementation("androidx.core:core-ktx:1.8.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.2")
+    implementation("androidx.core:core-ktx:1.17.0")
     implementation("androidx.appcompat:appcompat:1.7.1")
     // https://mvnrepository.com/artifact/org.maplibre.gl/android-sdk
     implementation("org.maplibre.gl:android-sdk:11.12.1")
