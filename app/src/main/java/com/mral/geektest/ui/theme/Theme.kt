@@ -19,19 +19,18 @@ private val DarkColorScheme =
     darkColorScheme(primary = Purple80, secondary = PurpleGrey80,
         tertiary = Pink80)
 
-private val LightColorScheme =
-    lightColorScheme(primary = Purple40, secondary = PurpleGrey40,
-        tertiary = Pink40
-
-        /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
+private val LightColorScheme = lightColorScheme(
+    primary = AppRed,
+    secondary = AppPink,
+    tertiary = AppBlue,
     onPrimary = Color.White,
     onSecondary = Color.White,
     onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */)
+    background = Color(0xFFF3F4F6), // gray-100
+    surface = Color.White,
+    onSurface = Color(0xFF1F2937), // gray-800
+    onBackground = Color(0xFF1F2937)
+)
 
 @Composable
 fun MyComposeApplicationTheme(darkTheme: Boolean = isSystemInDarkTheme(),

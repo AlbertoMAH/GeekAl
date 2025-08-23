@@ -3,14 +3,12 @@ package com.mral.geektest.ui.composables
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -37,27 +35,27 @@ fun SearchInProgressSheetContent(onClose: () -> Unit) {
                 text = "Recherche en cours...",
                 fontWeight = FontWeight.Bold,
                 fontSize = 22.sp,
-                color = Color.Black
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Nous recherchons les dépanneurs les plus proches de votre position.",
                 fontSize = 16.sp,
-                color = Color.DarkGray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
             Spacer(modifier = Modifier.height(32.dp))
             CircularProgressIndicator(
                 modifier = Modifier.size(48.dp),
-                color = Color(0xFFEF4444), // red-500
+                color = MaterialTheme.colorScheme.primary,
                 strokeWidth = 6.dp
             )
             Spacer(modifier = Modifier.height(32.dp))
             Text(
                 text = "Analyse de votre position...",
                 fontSize = 16.sp,
-                color = Color.DarkGray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(24.dp)) // Spacer for the 'N' button
         }
@@ -68,7 +66,7 @@ fun SearchInProgressSheetContent(onClose: () -> Unit) {
                 .align(Alignment.TopEnd)
                 .padding(top = 8.dp, end = 8.dp)
         ) {
-            Icon(Icons.Filled.Close, contentDescription = "Close", tint = Color.Gray)
+            Icon(Icons.Filled.Close, contentDescription = "Close", tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
         Box(
@@ -76,10 +74,10 @@ fun SearchInProgressSheetContent(onClose: () -> Unit) {
                 .align(Alignment.BottomStart)
                 .padding(bottom = 8.dp, start = 8.dp)
                 .size(32.dp)
-                .background(Color(0xFFE5E7EB), shape = CircleShape), // gray-200
+                .background(MaterialTheme.colorScheme.surfaceVariant, shape = CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = "N", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
+            Text(text = "N", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }

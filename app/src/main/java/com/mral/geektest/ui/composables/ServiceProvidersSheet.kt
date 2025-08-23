@@ -1,6 +1,7 @@
 package com.mral.geektest.ui.composables
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,6 +37,8 @@ val sampleProviders = listOf(
 @Composable
 fun ServiceProvidersSheetContent(onClose: () -> Unit) {
     var showDialog by remember { mutableStateOf<String?>(null) }
+    var selectedProviderId by remember { mutableStateOf<Int?>(null) }
+    val selectedProvider = sampleProviders.find { it.id == selectedProviderId }
 
     Box(
         modifier = Modifier
@@ -45,7 +48,7 @@ fun ServiceProvidersSheetContent(onClose: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color.White, shape = RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp))
+                .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp))
                 .padding(24.dp)
         ) {
             // Header
@@ -55,11 +58,11 @@ fun ServiceProvidersSheetContent(onClose: () -> Unit) {
                 verticalAlignment = Alignment.Top
             ) {
                 Column {
-                    Text("Dépanneurs à proximité", fontWeight = FontWeight.Bold, fontSize = 22.sp)
-                    Text("Sélectionnez un professionnel pour continuer.", color = Color.Gray, fontSize = 16.sp)
+                    Text("Dépanneurs à proximité", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = MaterialTheme.colorScheme.onSurface)
+                    Text("Sélectionnez un professionnel pour continuer.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 16.sp)
                 }
                 IconButton(onClick = onClose) {
-                    Icon(Icons.Filled.Close, contentDescription = "Close", tint = Color.Gray)
+                    Icon(Icons.Filled.Close, contentDescription = "Close", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
@@ -68,7 +71,11 @@ fun ServiceProvidersSheetContent(onClose: () -> Unit) {
             // List of providers
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 sampleProviders.forEach { provider ->
-                    ProviderCard(provider = provider, onClick = { showDialog = "You have selected ${provider.name}." })
+                    ProviderCard(
+                        provider = provider,
+                        isSelected = provider.id == selectedProviderId,
+                        onClick = { selectedProviderId = provider.id }
+                    )
                 }
             }
 
@@ -76,11 +83,16 @@ fun ServiceProvidersSheetContent(onClose: () -> Unit) {
 
             // Action button
             Button(
-                onClick = { showDialog = "You selected a 'dépanneur'!" },
+                onClick = {
+                    if (selectedProvider != null) {
+                        showDialog = "You have selected ${selectedProvider.name}."
+                    }
+                },
+                enabled = selectedProviderId != null,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)), // pink-500
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text("Sélectionnez un dépanneur", fontWeight = FontWeight.Bold, fontSize = 18.sp)
@@ -93,11 +105,11 @@ fun ServiceProvidersSheetContent(onClose: () -> Unit) {
                 .align(Alignment.BottomStart)
                 .padding(start = 24.dp, bottom = 16.dp)
                 .size(48.dp)
-                .background(Color(0xFFE5E7EB), shape = CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant, shape = CircleShape)
                 .offset(y = 24.dp), // To position it half outside
             contentAlignment = Alignment.Center
         ) {
-            Text("N", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color.DarkGray)
+            Text("N", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 
@@ -108,11 +120,14 @@ fun ServiceProvidersSheetContent(onClose: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProviderCard(provider: ServiceProvider, onClick: () -> Unit) {
+fun ProviderCard(provider: ServiceProvider, isSelected: Boolean, onClick: () -> Unit) {
+    val borderColor = if (isSelected) MaterialTheme.colorScheme.secondary else Color.Transparent
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(2.dp, borderColor, RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF9FAFB)), // gray-50
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         onClick = onClick
     ) {
@@ -124,14 +139,14 @@ fun ProviderCard(provider: ServiceProvider, onClick: () -> Unit) {
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .background(Color(0xFFE5E7EB), shape = CircleShape),
+                    .background(MaterialTheme.colorScheme.surfaceVariant, shape = CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text(provider.initials, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.DarkGray)
+                Text(provider.initials, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(provider.name, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
+                Text(provider.name, fontWeight = FontWeight.SemiBold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
                 Row(
                     modifier = Modifier.padding(top = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -140,13 +155,13 @@ fun ProviderCard(provider: ServiceProvider, onClick: () -> Unit) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Filled.Star, contentDescription = "Rating", tint = Color(0xFFFBBF24), modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("${provider.rating}", color = Color.Gray, fontSize = 14.sp)
+                        Text("${provider.rating}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                     }
                     // Time
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.Schedule, contentDescription = "Time", tint = Color.Gray, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Filled.Schedule, contentDescription = "Time", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(provider.time, color = Color.Gray, fontSize = 14.sp)
+                        Text(provider.time, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                     }
                 }
             }
@@ -159,13 +174,13 @@ fun CustomAlertDialog(message: String, onClose: () -> Unit) {
     Dialog(onDismissRequest = onClose) {
         Card(
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(message, textAlign = TextAlign.Center, fontSize = 18.sp)
+                Text(message, textAlign = TextAlign.Center, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(
                     onClick = onClose,

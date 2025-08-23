@@ -36,7 +36,7 @@ fun InitialUI() {
     Scaffold(
         topBar = { TopBar() },
         bottomBar = {
-            NavigationBar(containerColor = Color.White) {
+            NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                 items.forEachIndexed { index, item ->
                     NavigationBarItem(
                         selected = selectedItem == index,
@@ -44,11 +44,11 @@ fun InitialUI() {
                         icon = { Icon(icons[index], contentDescription = item) },
                         label = { Text(item) },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = Color(0xFFEF4444),
-                            selectedTextColor = Color(0xFFEF4444),
-                            unselectedIconColor = Color.Gray,
-                            unselectedTextColor = Color.Gray,
-                            indicatorColor = Color.White
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            indicatorColor = MaterialTheme.colorScheme.surface
                         )
                     )
                 }
@@ -59,7 +59,7 @@ fun InitialUI() {
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize()
-                .background(Color(0xFFF3F4F6)) // gray-100 from tailwind
+                .background(MaterialTheme.colorScheme.background)
         ) {
             Box(
                 modifier = Modifier
@@ -70,7 +70,7 @@ fun InitialUI() {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.LightGray)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                 )
 
                 FloatingActionButton(
@@ -78,10 +78,11 @@ fun InitialUI() {
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(16.dp),
-                    containerColor = Color(0xFF3B82F6), // blue-500 from tailwind
+                    containerColor = MaterialTheme.colorScheme.tertiary,
+                    contentColor = MaterialTheme.colorScheme.onTertiary,
                     shape = CircleShape
                 ) {
-                    Icon(Icons.Filled.MyLocation, contentDescription = "My Location", tint = Color.White)
+                    Icon(Icons.Filled.MyLocation, contentDescription = "My Location")
                 }
             }
 
@@ -91,10 +92,10 @@ fun InitialUI() {
                     .fillMaxWidth()
                     .padding(16.dp)
                     .height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)), // red-500 from tailwind
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("DÉPANNEZ-MOI", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp)
+                Text("DÉPANNEZ-MOI", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
         }
     }
@@ -103,7 +104,7 @@ fun InitialUI() {
         ModalBottomSheet(
             onDismissRequest = { bottomSheetState = BottomSheetState.Hidden },
             sheetState = modalSheetState,
-            containerColor = Color.White,
+            containerColor = MaterialTheme.colorScheme.surface,
             scrimColor = Color.Black.copy(alpha = 0.5f)
         ) {
             when (bottomSheetState) {
@@ -129,7 +130,7 @@ fun InitialUI() {
 @Composable
 fun TopBar() {
     Surface(
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 8.dp,
         shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)
     ) {
@@ -146,21 +147,21 @@ fun TopBar() {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .background(Color(0xFFFEE2E2), shape = RoundedCornerShape(8.dp)) // red-100
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp))
                             .padding(8.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             Icons.Filled.DirectionsCar,
                             contentDescription = "Car",
-                            tint = Color(0xFFEF4444) // red-500
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text("Mon Dépanneur PRO", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color(0xFF1F2937))
+                    Text("Mon Dépanneur PRO", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface)
                 }
                 IconButton(onClick = { /* TODO: Settings action */ }) {
-                    Icon(Icons.Filled.Settings, contentDescription = "Settings", tint = Color.Gray)
+                    Icon(Icons.Filled.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
@@ -168,12 +169,12 @@ fun TopBar() {
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Filled.LocationOn, contentDescription = "Location", tint = Color.Gray)
+                Icon(Icons.Filled.LocationOn, contentDescription = "Location", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("123 Rue Fictive, Paris", color = Color.Gray)
+                Text("123 Rue Fictive, Paris", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.weight(1f))
                 IconButton(onClick = { /* TODO: Refresh action */ }) {
-                    Icon(Icons.Filled.Refresh, contentDescription = "Refresh", tint = Color.Gray)
+                    Icon(Icons.Filled.Refresh, contentDescription = "Refresh", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
