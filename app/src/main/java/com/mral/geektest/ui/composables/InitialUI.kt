@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -21,6 +22,10 @@ fun InitialUI() {
     var selectedItem by remember { mutableStateOf(0) }
     val items = listOf("Carte", "Demandes", "Profil")
     val icons = listOf(Icons.Filled.Map, Icons.Filled.Build, Icons.Filled.Person)
+
+    val sheetState = rememberModalBottomSheetState()
+    var showBottomSheet by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         topBar = { TopBar() },
@@ -75,7 +80,7 @@ fun InitialUI() {
             }
 
             Button(
-                onClick = { /* TODO: "DÉPANNEZ-MOI" action */ },
+                onClick = { showBottomSheet = true },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
@@ -85,6 +90,23 @@ fun InitialUI() {
             ) {
                 Text("DÉPANNEZ-MOI", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp)
             }
+        }
+    }
+
+    if (showBottomSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showBottomSheet = false },
+            sheetState = sheetState,
+            containerColor = Color.Transparent, // Make the sheet's container transparent
+            scrimColor = Color.Black.copy(alpha = 0.5f) // Dark overlay
+        ) {
+            SearchInProgressSheetContent(onClose = {
+                scope.launch { sheetState.hide() }.invokeOnCompletion {
+                    if (!sheetState.isVisible) {
+                        showBottomSheet = false
+                    }
+                }
+            })
         }
     }
 }
