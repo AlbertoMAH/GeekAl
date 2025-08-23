@@ -97,7 +97,6 @@ fun InitialUI() {
         ModalBottomSheet(
             onDismissRequest = { showBottomSheet = false },
             sheetState = sheetState,
-            containerColor = Color.Transparent, // Make the sheet's container transparent
             scrimColor = Color.Black.copy(alpha = 0.5f) // Dark overlay
         ) {
             SearchInProgressSheetContent(onClose = {

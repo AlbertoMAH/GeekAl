@@ -22,13 +22,12 @@ fun SearchInProgressSheetContent(onClose: () -> Unit) {
         // This outer Box is necessary to align the 'N' and close buttons relative to the content.
         modifier = Modifier
             .fillMaxWidth()
+            .navigationBarsPadding()
             .padding(16.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                // The frosted glass effect is approximated with a semi-transparent background.
-                .background(Color.White.copy(alpha = 0.85f), shape = RoundedCornerShape(24.dp))
                 .padding(24.dp), // Inner padding
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
