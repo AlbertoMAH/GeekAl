@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,6 +46,8 @@ import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.rememberBottomSheetScaffoldState
 import androidx.compose.material.rememberBottomSheetState
@@ -85,6 +89,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.mral.geektest.ui.composables.MapView
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.maplibre.android.MapLibre
 import org.maplibre.android.WellKnownTileServer
@@ -95,6 +100,20 @@ import org.maplibre.android.location.modes.CameraMode
 import org.maplibre.android.location.modes.RenderMode
 import org.maplibre.android.maps.MapLibreMap
 
+data class ServiceProvider(
+    val id: Int,
+    val name: String,
+    val initials: String,
+    val rating: Double,
+    val time: String,
+)
+
+val sampleServices = listOf(
+    ServiceProvider(1, "Garage Dubois", "GD", 4.5, "5 min"),
+    ServiceProvider(2, "Auto-Réparation Express", "AR", 4.8, "8 min"),
+    ServiceProvider(3, "SOS Mécanique", "SM", 4.2, "12 min"),
+)
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -103,6 +122,107 @@ class MainActivity : ComponentActivity() {
             MaterialTheme {
                 MainScreen()
             }
+        }
+    }
+}
+
+enum class BottomSheetWorkflowState {
+    Searching,
+    Results
+}
+
+@Composable
+fun BottomSheetContent(onClose: () -> Unit) {
+    var workflowState by remember { mutableStateOf(BottomSheetWorkflowState.Searching) }
+
+    LaunchedEffect(workflowState) {
+        if (workflowState == BottomSheetWorkflowState.Searching) {
+            delay(5000)
+            workflowState = BottomSheetWorkflowState.Results
+        }
+    }
+
+    when (workflowState) {
+        BottomSheetWorkflowState.Searching -> {
+            SearchInProgressSheetContent(onClose = onClose)
+        }
+        BottomSheetWorkflowState.Results -> {
+            MechanicListSheetContent(
+                onClose = onClose,
+                onSelect = { /* TODO */ }
+            )
+        }
+    }
+}
+
+@Composable
+fun MechanicListSheetContent(
+    onClose: () -> Unit,
+    onSelect: (ServiceProvider) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text("Dépanneurs à proximité", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Text("Sélectionnez un professionnel pour continuer.", color = Color.Gray)
+            }
+            IconButton(onClick = onClose) {
+                Icon(Icons.Default.Close, contentDescription = "Close")
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(sampleServices) { service ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onSelect(service) },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(Color.LightGray, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(service.initials, fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(service.name, fontWeight = FontWeight.Bold)
+                            Row {
+                                Icon(Icons.Default.Star, contentDescription = "Rating", tint = Color.Yellow)
+                                Text("${service.rating}")
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Icon(Icons.Default.Schedule, contentDescription = "Time", tint = Color.Gray)
+                                Text(service.time)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = { /*TODO*/ },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)) // Pink color
+        ) {
+            Text("Sélectionnez un dépanneur", modifier = Modifier.padding(vertical = 8.dp))
         }
     }
 }
@@ -202,7 +322,7 @@ fun MainScreen() {
                 sheetState = sheetState,
                 dragHandle = null
             ) {
-                SearchInProgressSheetContent(onClose = { showBottomSheet = false })
+                BottomSheetContent(onClose = { showBottomSheet = false })
             }
         }
     }
