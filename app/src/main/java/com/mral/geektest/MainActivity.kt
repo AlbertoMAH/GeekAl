@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -256,25 +257,47 @@ fun MechanicListSheetContent(
 }
 
 @Composable
-fun ProblemButton(icon: ImageVector, label: String, onClick: () -> Unit) {
+fun ProblemButton(
+    icon: ImageVector,
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
     OutlinedButton(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.outlinedButtonColors(
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else Color.Transparent
+        ),
+        border = BorderStroke(
+            width = 1.dp,
+            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.LightGray
+        )
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(vertical = 16.dp)
         ) {
-            Icon(icon, contentDescription = label, modifier = Modifier.size(24.dp))
+            Icon(
+                icon,
+                contentDescription = label,
+                modifier = Modifier.size(24.dp),
+                tint = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray
+            )
             Spacer(modifier = Modifier.height(8.dp))
-            Text(label, textAlign = TextAlign.Center)
+            Text(
+                label,
+                textAlign = TextAlign.Center,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Unspecified
+            )
         }
     }
 }
 
 @Composable
 fun ProblemDetailsSheetContent(onClose: () -> Unit, onBack: () -> Unit) {
+    var selectedProblem by remember { mutableStateOf<String?>(null) }
     var description by remember { mutableStateOf("") }
     val problems = listOf(
         "Batterie" to Icons.Default.BatteryChargingFull,
@@ -312,7 +335,13 @@ fun ProblemDetailsSheetContent(onClose: () -> Unit, onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(problems) { (label, icon) ->
-                ProblemButton(icon = icon, label = label, onClick = { /* TODO */ })
+                val isSelected = selectedProblem == label
+                ProblemButton(
+                    icon = icon,
+                    label = label,
+                    isSelected = isSelected,
+                    onClick = { selectedProblem = label }
+                )
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
@@ -331,7 +360,7 @@ fun ProblemDetailsSheetContent(onClose: () -> Unit, onBack: () -> Unit) {
         ) {
             Text("Envoyer la demande", modifier = Modifier.padding(vertical = 8.dp))
         }
-        Spacer(modifier = Modifier.height(100.dp))
+        Spacer(modifier = Modifier.height(50.dp))
     }
 }
 
