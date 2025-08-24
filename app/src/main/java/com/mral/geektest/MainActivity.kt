@@ -56,6 +56,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
@@ -119,7 +121,9 @@ fun MainScreen() {
     var map: MapLibreMap? by remember { mutableStateOf(null) }
     var hasLocationPermission by remember { mutableStateOf(false) }
     var selectedTabIndex by remember { mutableStateOf(0) }
-    var showSearchInProgressModal by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
+    var showBottomSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(map, hasLocationPermission) {
         if (map != null && hasLocationPermission) {
@@ -174,7 +178,7 @@ fun MainScreen() {
                 )
                 // The large button is part of the content
                 Button(
-                    onClick = { showSearchInProgressModal = true },
+                    onClick = { showBottomSheet = true },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp)
@@ -192,8 +196,13 @@ fun MainScreen() {
             }
         }
 
-        if (showSearchInProgressModal) {
-            SearchInProgressModal(onDismiss = { showSearchInProgressModal = false })
+        if (showBottomSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showBottomSheet = false },
+                sheetState = sheetState
+            ) {
+                SearchInProgressSheetContent()
+            }
         }
     }
 }
@@ -301,45 +310,23 @@ fun RescueMapBottomNav(
 }
 
 @Composable
-fun SearchInProgressModal(onDismiss: () -> Unit) {
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            shape = RoundedCornerShape(24.dp)
+fun SearchInProgressSheetContent() {
+    Box {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Box {
-                Column(
-                    modifier = Modifier
-                        .background(Color.White.copy(alpha = 0.85f))
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    IconButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.align(Alignment.End)
-                    ) {
-                        Icon(Icons.Default.Close, contentDescription = "Close")
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Recherche en cours...", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Nous recherchons les dépanneurs les plus proches de votre position.", textAlign = TextAlign.Center, color = Color.Gray)
-                    Spacer(modifier = Modifier.height(24.dp))
-                    CircularProgressIndicator(color = Color.Red)
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Text("Analyse de votre position...", color = Color.Gray)
-                }
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(16.dp)
-                        .size(32.dp)
-                        .background(Color.LightGray, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("N", fontWeight = FontWeight.Bold, color = Color.Black)
-                }
-            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Recherche en cours...", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Nous recherchons les dépanneurs les plus proches de votre position.", textAlign = TextAlign.Center, color = Color.Gray)
+            Spacer(modifier = Modifier.height(24.dp))
+            CircularProgressIndicator(color = Color.Red)
+            Spacer(modifier = Modifier.height(24.dp))
+            Text("Analyse de votre position...", color = Color.Gray)
         }
     }
 }
