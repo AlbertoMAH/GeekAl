@@ -129,37 +129,60 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-enum class BottomSheetWorkflowState {
-    Searching,
-    Results,
-    ProblemDetails
+sealed class BottomSheetWorkflowState {
+    object Searching : BottomSheetWorkflowState()
+    object Results : BottomSheetWorkflowState()
+    data class ProblemDetails(val serviceProvider: ServiceProvider) : BottomSheetWorkflowState()
+    data class Confirmation(
+        val serviceProvider: ServiceProvider,
+        val problem: String,
+        val description: String
+    ) : BottomSheetWorkflowState()
 }
 
 @Composable
 fun BottomSheetContent(onClose: () -> Unit) {
-    var workflowState by remember { mutableStateOf(BottomSheetWorkflowState.Searching) }
+    var workflowState by remember { mutableStateOf<BottomSheetWorkflowState>(BottomSheetWorkflowState.Searching) }
 
     LaunchedEffect(workflowState) {
-        if (workflowState == BottomSheetWorkflowState.Searching) {
+        if (workflowState is BottomSheetWorkflowState.Searching) {
             delay(5000)
             workflowState = BottomSheetWorkflowState.Results
         }
     }
 
-    when (workflowState) {
-        BottomSheetWorkflowState.Searching -> {
+    when (val state = workflowState) {
+        is BottomSheetWorkflowState.Searching -> {
             SearchInProgressSheetContent(onClose = onClose)
         }
-        BottomSheetWorkflowState.Results -> {
+        is BottomSheetWorkflowState.Results -> {
             MechanicListSheetContent(
                 onClose = onClose,
-                onConfirm = { workflowState = BottomSheetWorkflowState.ProblemDetails }
+                onConfirm = { serviceProvider ->
+                    workflowState = BottomSheetWorkflowState.ProblemDetails(serviceProvider)
+                }
             )
         }
-        BottomSheetWorkflowState.ProblemDetails -> {
+        is BottomSheetWorkflowState.ProblemDetails -> {
             ProblemDetailsSheetContent(
+                serviceProvider = state.serviceProvider,
                 onClose = onClose,
-                onBack = { workflowState = BottomSheetWorkflowState.Results }
+                onBack = { workflowState = BottomSheetWorkflowState.Results },
+                onConfirm = { problem, description ->
+                    workflowState = BottomSheetWorkflowState.Confirmation(
+                        serviceProvider = state.serviceProvider,
+                        problem = problem,
+                        description = description
+                    )
+                }
+            )
+        }
+        is BottomSheetWorkflowState.Confirmation -> {
+            ConfirmationSheetContent(
+                state = state,
+                onClose = onClose,
+                onBack = { workflowState = BottomSheetWorkflowState.ProblemDetails(state.serviceProvider) },
+                onConfirm = { /* TODO: Final action */ }
             )
         }
     }
@@ -168,7 +191,7 @@ fun BottomSheetContent(onClose: () -> Unit) {
 @Composable
 fun MechanicListSheetContent(
     onClose: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: (ServiceProvider) -> Unit
 ) {
     var selectedServiceId by remember { mutableStateOf<Int?>(null) }
 
@@ -238,7 +261,11 @@ fun MechanicListSheetContent(
         }
         Spacer(modifier = Modifier.height(16.dp))
         Button(
-            onClick = onConfirm,
+            onClick = {
+                sampleServices.find { it.id == selectedServiceId }?.let {
+                    onConfirm(it)
+                }
+            },
             enabled = selectedServiceId != null,
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)) // Pink color
@@ -289,7 +316,12 @@ fun ProblemButton(
 }
 
 @Composable
-fun ProblemDetailsSheetContent(onClose: () -> Unit, onBack: () -> Unit) {
+fun ProblemDetailsSheetContent(
+    serviceProvider: ServiceProvider,
+    onClose: () -> Unit,
+    onBack: () -> Unit,
+    onConfirm: (problem: String, description: String) -> Unit
+) {
     var selectedProblem by remember { mutableStateOf<String?>(null) }
     var description by remember { mutableStateOf("") }
     val problems = listOf(
@@ -348,12 +380,97 @@ fun ProblemDetailsSheetContent(onClose: () -> Unit, onBack: () -> Unit) {
         )
         Spacer(modifier = Modifier.height(16.dp))
         Button(
-            onClick = { /* TODO */ },
+            onClick = {
+                selectedProblem?.let { problem ->
+                    onConfirm(problem, description)
+                }
+            },
+            enabled = selectedProblem != null,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Envoyer la demande", modifier = Modifier.padding(vertical = 8.dp))
         }
         Spacer(modifier = Modifier.height(50.dp))
+    }
+}
+
+@Composable
+fun ConfirmationSheetContent(
+    state: BottomSheetWorkflowState.Confirmation,
+    onClose: () -> Unit,
+    onBack: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        // Header
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Confirmez votre demande", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Text("Veuillez vérifier les informations avant d'envoyer.", color = Color.Gray)
+            }
+            IconButton(onClick = onClose) {
+                Icon(Icons.Default.Close, contentDescription = "Close")
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Summary Box
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+                .padding(16.dp)
+        ) {
+            Text("Récapitulatif", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+
+            SummaryRow(icon = Icons.Default.Person, label = "Dépanneur", value = state.serviceProvider.name)
+            SummaryRow(icon = Icons.Default.ReportProblem, label = "Problème", value = state.problem)
+            SummaryRow(icon = Icons.Default.ReportProblem, label = "Chat", value = "\"${state.description}\"") // Using ReportProblem as placeholder for Chat
+
+            val currentDateTime = java.text.SimpleDateFormat("dd MMMM 'à' HH:mm", java.util.Locale.FRENCH).format(java.util.Date())
+            SummaryRow(icon = Icons.Default.Schedule, label = "Quand", value = currentDateTime)
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Confirm Button
+        Button(
+            onClick = onConfirm,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)) // Rose color from mockup
+        ) {
+            Text("Confirmer et envoyer", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        }
+        Spacer(modifier = Modifier.height(50.dp))
+    }
+}
+
+// Helper composable for the summary rows
+@Composable
+fun SummaryRow(icon: ImageVector, label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, contentDescription = label, tint = Color.Gray)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(label, color = Color.Gray)
+        }
+        Text(value, fontWeight = FontWeight.Bold, textAlign = TextAlign.End)
     }
 }
 
