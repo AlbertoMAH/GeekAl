@@ -350,6 +350,7 @@ fun MainScreen() {
     var hasLocationPermission by remember { mutableStateOf(false) }
     var selectedTabIndex by remember { mutableStateOf(0) }
     val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
         confirmValueChange = { it != SheetValue.Hidden }
     )
     val scope = rememberCoroutineScope()
