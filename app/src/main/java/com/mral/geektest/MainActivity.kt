@@ -199,9 +199,10 @@ fun MainScreen() {
         if (showBottomSheet) {
             ModalBottomSheet(
                 onDismissRequest = { showBottomSheet = false },
-                sheetState = sheetState
+                sheetState = sheetState,
+                dragHandle = null
             ) {
-                SearchInProgressSheetContent()
+                SearchInProgressSheetContent(onClose = { showBottomSheet = false })
             }
         }
     }
@@ -310,7 +311,7 @@ fun RescueMapBottomNav(
 }
 
 @Composable
-fun SearchInProgressSheetContent() {
+fun SearchInProgressSheetContent(onClose: () -> Unit) {
     Box {
         Column(
             modifier = Modifier
@@ -319,6 +320,12 @@ fun SearchInProgressSheetContent() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            IconButton(
+                onClick = onClose,
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Icon(Icons.Default.Close, contentDescription = "Close")
+            }
             Spacer(modifier = Modifier.height(8.dp))
             Text("Recherche en cours...", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
@@ -327,6 +334,7 @@ fun SearchInProgressSheetContent() {
             CircularProgressIndicator(color = Color.Red)
             Spacer(modifier = Modifier.height(24.dp))
             Text("Analyse de votre position...", color = Color.Gray)
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
