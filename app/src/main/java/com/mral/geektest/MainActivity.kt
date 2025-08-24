@@ -82,7 +82,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.Dialog
 import com.mral.geektest.ui.composables.MapView
 import kotlinx.coroutines.launch
 import org.maplibre.android.MapLibre
@@ -101,38 +100,6 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 MainScreen()
-            }
-        }
-    }
-}
-
-@Composable
-fun SearchInProgressModal(onDismiss: () -> Unit) {
-    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
-        androidx.compose.material3.Card(
-            shape = RoundedCornerShape(24.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .background(Color.White.copy(alpha = 0.85f))
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                androidx.compose.material3.IconButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Icon(Icons.Default.Close, contentDescription = "Close")
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Recherche en cours...", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Nous recherchons les dépanneurs les plus proches de votre position.", textAlign = TextAlign.Center, color = Color.Gray)
-                Spacer(modifier = Modifier.height(24.dp))
-                androidx.compose.material3.CircularProgressIndicator(color = Color.Red)
-                Spacer(modifier = Modifier.height(24.dp))
-                Text("Analyse de votre position...", color = Color.Gray)
             }
         }
     }
