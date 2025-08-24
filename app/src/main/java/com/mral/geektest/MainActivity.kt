@@ -148,8 +148,7 @@ fun BottomSheetContent(onClose: () -> Unit) {
         }
         BottomSheetWorkflowState.Results -> {
             MechanicListSheetContent(
-                onClose = onClose,
-                onSelect = { /* TODO */ }
+                onClose = onClose
             )
         }
     }
@@ -157,9 +156,10 @@ fun BottomSheetContent(onClose: () -> Unit) {
 
 @Composable
 fun MechanicListSheetContent(
-    onClose: () -> Unit,
-    onSelect: (ServiceProvider) -> Unit
+    onClose: () -> Unit
 ) {
+    var selectedServiceId by remember { mutableStateOf<Int?>(null) }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -183,10 +183,16 @@ fun MechanicListSheetContent(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(sampleServices) { service ->
+                val isSelected = service.id == selectedServiceId
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onSelect(service) },
+                        .clickable { selectedServiceId = service.id }
+                        .border(
+                            width = if (isSelected) 2.dp else 0.dp,
+                            color = if (isSelected) Color.Red else Color.Transparent,
+                            shape = RoundedCornerShape(12.dp)
+                        ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Row(
@@ -224,6 +230,7 @@ fun MechanicListSheetContent(
         ) {
             Text("Sélectionnez un dépanneur", modifier = Modifier.padding(vertical = 8.dp))
         }
+        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 
