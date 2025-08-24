@@ -21,6 +21,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -46,6 +49,9 @@ import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.BatteryChargingFull
+import androidx.compose.material.icons.filled.LocalGasStation
+import androidx.compose.material.icons.filled.ReportProblem
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Settings
@@ -68,6 +74,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -128,7 +135,8 @@ class MainActivity : ComponentActivity() {
 
 enum class BottomSheetWorkflowState {
     Searching,
-    Results
+    Results,
+    ProblemDetails
 }
 
 @Composable
@@ -148,15 +156,20 @@ fun BottomSheetContent(onClose: () -> Unit) {
         }
         BottomSheetWorkflowState.Results -> {
             MechanicListSheetContent(
-                onClose = onClose
+                onClose = onClose,
+                onSelect = { workflowState = BottomSheetWorkflowState.ProblemDetails }
             )
+        }
+        BottomSheetWorkflowState.ProblemDetails -> {
+            ProblemDetailsSheetContent(onClose = onClose)
         }
     }
 }
 
 @Composable
 fun MechanicListSheetContent(
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    onSelect: (ServiceProvider) -> Unit
 ) {
     var selectedServiceId by remember { mutableStateOf<Int?>(null) }
 
@@ -187,7 +200,10 @@ fun MechanicListSheetContent(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { selectedServiceId = service.id }
+                        .clickable {
+                            selectedServiceId = service.id
+                            onSelect(service)
+                        }
                         .border(
                             width = if (isSelected) 2.dp else 0.dp,
                             color = if (isSelected) Color.Red else Color.Transparent,
@@ -231,6 +247,68 @@ fun MechanicListSheetContent(
             Text("Sélectionnez un dépanneur", modifier = Modifier.padding(vertical = 8.dp))
         }
         Spacer(modifier = Modifier.height(32.dp))
+    }
+}
+
+@Composable
+fun ProblemButton(icon: ImageVector, label: String, onClick: () -> Unit) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(vertical = 16.dp)
+        ) {
+            Icon(icon, contentDescription = label, modifier = Modifier.size(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(label, textAlign = TextAlign.Center)
+        }
+    }
+}
+
+@Composable
+fun ProblemDetailsSheetContent(onClose: () -> Unit) {
+    var description by remember { mutableStateOf("") }
+    val problems = listOf(
+        "Batterie" to Icons.Default.BatteryChargingFull,
+        "Pneu crevé" to Icons.Default.Build, // Using Build for Wrench
+        "Panne d'essence" to Icons.Default.LocalGasStation,
+        "Moteur" to Icons.Default.ReportProblem,
+        "Autre" to Icons.Default.Build, // Using Build for Wrench
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(problems) { (label, icon) ->
+                ProblemButton(icon = icon, label = label, onClick = { /* TODO */ })
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        OutlinedTextField(
+            value = description,
+            onValueChange = { description = it },
+            placeholder = { Text("Décrivez le problème plus en détail") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(128.dp)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = { /* TODO */ },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Envoyer la demande", modifier = Modifier.padding(vertical = 8.dp))
+        }
     }
 }
 
