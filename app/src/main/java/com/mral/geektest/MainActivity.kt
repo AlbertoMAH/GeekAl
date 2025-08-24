@@ -2,6 +2,14 @@ package com.mral.geektest
 
 import android.Manifest
 import android.annotation.SuppressLint
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -31,7 +39,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CarCrash
 import androidx.compose.material.icons.filled.Construction
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.rememberBottomSheetScaffoldState
@@ -49,6 +63,9 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -89,6 +106,90 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@Composable
+fun GeminiModal(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.4f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(24.dp)
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    AsyncImage(
+                        model = "https://placehold.co/400x225/e2e8f0/000000?text=Image+of+an+astronaut+fox",
+                        contentDescription = "Modal Image",
+                        modifier = Modifier.fillMaxWidth(),
+                        contentScale = ContentScale.Crop
+                    )
+                    Icon(
+                        imageVector = Icons.Filled.VolumeUp,
+                        contentDescription = "Speaker",
+                        modifier = Modifier.size(64.dp),
+                        tint = Color(0xFF9333EA)
+                    )
+                }
+
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Créez des vidéos de haute qualité, désormais avec du",
+                        style = MaterialTheme.typography.headlineSmall,
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Demandez à Gemini d'ajouter des dialogues et de la musique de fond, et de donner vie à vos photos avec Veo 3, notre dernier outil de génération de vidéos.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        color = Color.Gray
+                    )
+                    Text(
+                        text = "Ce week-end seulement, essayez Veo 3 sans frais. Sélectionnez \"Vidéo\" dans le champ de saisie pour commencer.",
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                        color = Color.DarkGray
+                    )
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 24.dp, start = 24.dp, end = 24.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(
+                        onClick = { /*TODO*/ },
+                        shape = CircleShape
+                    ) {
+                        Text("Non, merci", color = Color(0xFF374151))
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = { /*TODO*/ },
+                        shape = CircleShape,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3B82F6))
+                    ) {
+                        Text("Essayer")
+                    }
+                }
+            }
+        }
+    }
+}
+
 sealed class SheetContentState {
     object Home : SheetContentState()
     data class Details(val serviceType: String) : SheetContentState()
@@ -102,14 +203,6 @@ fun MainScreen() {
     val styleUrl = "https://api.maptiler.com/maps/streets/style.json?key=${context.getString(R.string.maptiler_api_key)}"
     var map: MapLibreMap? by remember { mutableStateOf(null) }
     var hasLocationPermission by remember { mutableStateOf(false) }
-    var selectedNavItem by remember { mutableStateOf(0) }
-
-    val scaffoldState = rememberBottomSheetScaffoldState(
-        bottomSheetState = rememberBottomSheetState(initialValue = BottomSheetValue.Collapsed)
-    )
-    val modalSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
-    val scope = rememberCoroutineScope()
-    var sheetContentState by remember { mutableStateOf<SheetContentState>(SheetContentState.Home) }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -146,72 +239,115 @@ fun MainScreen() {
         }
     }
 
-    Scaffold(
-        bottomBar = {
-            AppBottomNavigation(
-                selectedItem = selectedNavItem,
-                onItemSelected = { selectedNavItem = it }
+    Box(modifier = Modifier.fillMaxSize()) {
+        MapView(
+            modifier = Modifier.fillMaxSize(),
+            onMapReady = { map = it },
+            styleUrl = styleUrl,
+            initialCenter = LatLng(5.3, -4.0),
+            initialZoom = 12.0
+        )
+
+        GeminiHeader(modifier = Modifier.align(Alignment.TopCenter))
+
+        GeminiModal(modifier = Modifier.align(Alignment.Center))
+
+        GeminiBottomBar(modifier = Modifier.align(Alignment.BottomCenter))
+
+        FloatingActionButton(
+            onClick = {
+                locationPermissionLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
+                )
+            },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        ) {
+            Icon(Icons.Filled.MyLocation, "My Location")
+        }
+    }
+}
+
+@Composable
+fun GeminiHeader(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Menu,
+            contentDescription = "Menu",
+            modifier = Modifier.size(24.dp)
+        )
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(text = "Gemini", fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+            Text(text = " | ", fontSize = 20.sp, color = Color.Gray)
+            Text(text = "2.5 Flash", fontSize = 16.sp, color = Color.Gray)
+            Icon(
+                imageVector = Icons.Filled.KeyboardArrowDown,
+                contentDescription = "Dropdown",
+                tint = Color.Gray
             )
         }
-    ) { paddingValues ->
-        ModalBottomSheetLayout(
-            sheetState = modalSheetState,
-            sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-            sheetContent = {
-                ServiceSelectionSheetContent(onConfirm = { serviceType ->
-                    scope.launch {
-                        modalSheetState.hide()
-                        sheetContentState = SheetContentState.Details(serviceType)
-                        scaffoldState.bottomSheetState.expand()
-                    }
-                })
-            }
-        ) {
-            BottomSheetScaffold(
-                modifier = Modifier.padding(paddingValues),
-                scaffoldState = scaffoldState,
-                sheetPeekHeight = if (sheetContentState is SheetContentState.Home) 150.dp else 0.dp,
-                sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-                sheetContent = {
-                    when (val state = sheetContentState) {
-                        is SheetContentState.Home -> HomeSheetContent(
-                            onShowServiceSelection = { scope.launch { modalSheetState.show() } }
-                        )
-                        is SheetContentState.Details -> RequestDetailsSheetContent(
-                            serviceType = state.serviceType,
-                            onSend = {
-                                // TODO: Implement final submission
-                            }
-                        )
-                    }
-                }
-            ) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    MapView(
-                        modifier = Modifier.fillMaxSize(),
-                        onMapReady = { map = it },
-                        styleUrl = styleUrl,
-                        initialCenter = LatLng(5.3, -4.0),
-                        initialZoom = 12.0
-                    )
 
-                    FloatingActionButton(
-                        onClick = {
-                            locationPermissionLauncher.launch(
-                                arrayOf(
-                                    Manifest.permission.ACCESS_FINE_LOCATION,
-                                    Manifest.permission.ACCESS_COARSE_LOCATION
-                                )
-                            )
-                        },
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(16.dp)
-                    ) {
-                        Icon(Icons.Filled.MyLocation, "My Location")
-                    }
-                }
-            }
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(Color.LightGray)
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun GeminiBottomBar(modifier: Modifier = Modifier) {
+    var text by remember { mutableStateOf("") }
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .background(Color(0xFFF3F4F6), RoundedCornerShape(32.dp))
+            .padding(horizontal = 8.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        IconButton(
+            onClick = { /*TODO*/ },
+            modifier = Modifier.background(Color(0xFFE5E7EB), CircleShape)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Add,
+                contentDescription = "Add"
+            )
+        }
+
+        TextField(
+            value = text,
+            onValueChange = { text = it },
+            placeholder = { Text("Demandez à Gemini") },
+            modifier = Modifier.weight(1f),
+            colors = TextFieldDefaults.textFieldColors(
+                containerColor = Color.Transparent,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent
+            )
+        )
+
+        IconButton(onClick = { /*TODO*/ }) {
+            Icon(Icons.Filled.Image, contentDescription = "Image")
+        }
+        IconButton(onClick = { /*TODO*/ }) {
+            Icon(Icons.Filled.Mic, contentDescription = "Microphone")
         }
     }
 }
