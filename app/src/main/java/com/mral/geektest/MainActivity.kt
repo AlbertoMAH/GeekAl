@@ -251,7 +251,7 @@ fun MechanicListSheetContent(
         ) {
             Text("Sélectionnez un dépanneur", modifier = Modifier.padding(vertical = 8.dp))
         }
-        Spacer(modifier = Modifier.height(100.dp))
+        Spacer(modifier = Modifier.height(50.dp))
     }
 }
 
