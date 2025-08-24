@@ -36,6 +36,7 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.ModalBottomSheetLayout
 import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CarCrash
@@ -68,6 +69,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
@@ -157,11 +159,14 @@ fun BottomSheetContent(onClose: () -> Unit) {
         BottomSheetWorkflowState.Results -> {
             MechanicListSheetContent(
                 onClose = onClose,
-                onSelect = { workflowState = BottomSheetWorkflowState.ProblemDetails }
+                onConfirm = { workflowState = BottomSheetWorkflowState.ProblemDetails }
             )
         }
         BottomSheetWorkflowState.ProblemDetails -> {
-            ProblemDetailsSheetContent(onClose = onClose)
+            ProblemDetailsSheetContent(
+                onClose = onClose,
+                onBack = { workflowState = BottomSheetWorkflowState.Results }
+            )
         }
     }
 }
@@ -169,7 +174,7 @@ fun BottomSheetContent(onClose: () -> Unit) {
 @Composable
 fun MechanicListSheetContent(
     onClose: () -> Unit,
-    onSelect: (ServiceProvider) -> Unit
+    onConfirm: () -> Unit
 ) {
     var selectedServiceId by remember { mutableStateOf<Int?>(null) }
 
@@ -202,7 +207,6 @@ fun MechanicListSheetContent(
                         .fillMaxWidth()
                         .clickable {
                             selectedServiceId = service.id
-                            onSelect(service)
                         }
                         .border(
                             width = if (isSelected) 2.dp else 0.dp,
@@ -240,13 +244,14 @@ fun MechanicListSheetContent(
         }
         Spacer(modifier = Modifier.height(16.dp))
         Button(
-            onClick = { /*TODO*/ },
+            onClick = onConfirm,
+            enabled = selectedServiceId != null,
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)) // Pink color
         ) {
             Text("Sélectionnez un dépanneur", modifier = Modifier.padding(vertical = 8.dp))
         }
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(100.dp))
     }
 }
 
@@ -269,7 +274,7 @@ fun ProblemButton(icon: ImageVector, label: String, onClick: () -> Unit) {
 }
 
 @Composable
-fun ProblemDetailsSheetContent(onClose: () -> Unit) {
+fun ProblemDetailsSheetContent(onClose: () -> Unit, onBack: () -> Unit) {
     var description by remember { mutableStateOf("") }
     val problems = listOf(
         "Batterie" to Icons.Default.BatteryChargingFull,
@@ -286,10 +291,13 @@ fun ProblemDetailsSheetContent(onClose: () -> Unit) {
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(modifier = Modifier.weight(1f)) {
                 Text("Quel est le problème ?", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                 Text("Donnez des détails pour une meilleure prise en charge.", color = Color.Gray)
             }
@@ -341,7 +349,9 @@ fun MainScreen() {
     var map: MapLibreMap? by remember { mutableStateOf(null) }
     var hasLocationPermission by remember { mutableStateOf(false) }
     var selectedTabIndex by remember { mutableStateOf(0) }
-    val sheetState = rememberModalBottomSheetState()
+    val sheetState = rememberModalBottomSheetState(
+        confirmValueChange = { it != SheetValue.Hidden }
+    )
     val scope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
 
