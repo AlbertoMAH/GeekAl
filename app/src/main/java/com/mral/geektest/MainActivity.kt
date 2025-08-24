@@ -31,15 +31,16 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.ModalBottomSheetLayout
 import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CarCrash
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Construction
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
@@ -49,9 +50,12 @@ import androidx.compose.material.rememberBottomSheetState
 import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
@@ -77,6 +81,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.Dialog
 import com.mral.geektest.ui.composables.MapView
 import kotlinx.coroutines.launch
 import org.maplibre.android.MapLibre
@@ -100,6 +106,38 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@Composable
+fun SearchInProgressModal(onDismiss: () -> Unit) {
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        androidx.compose.material3.Card(
+            shape = RoundedCornerShape(24.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .background(Color.White.copy(alpha = 0.85f))
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                androidx.compose.material3.IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = "Close")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Recherche en cours...", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Nous recherchons les dépanneurs les plus proches de votre position.", textAlign = TextAlign.Center, color = Color.Gray)
+                Spacer(modifier = Modifier.height(24.dp))
+                androidx.compose.material3.CircularProgressIndicator(color = Color.Red)
+                Spacer(modifier = Modifier.height(24.dp))
+                Text("Analyse de votre position...", color = Color.Gray)
+            }
+        }
+    }
+}
+
 sealed class SheetContentState {
     object Home : SheetContentState()
     data class Details(val serviceType: String) : SheetContentState()
@@ -114,18 +152,7 @@ fun MainScreen() {
     var map: MapLibreMap? by remember { mutableStateOf(null) }
     var hasLocationPermission by remember { mutableStateOf(false) }
     var selectedTabIndex by remember { mutableStateOf(0) }
-
-    val locationPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-            permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-        ) {
-            hasLocationPermission = true
-        } else {
-            // TODO: Location permission denied
-        }
-    }
+    var showSearchInProgressModal by remember { mutableStateOf(false) }
 
     LaunchedEffect(map, hasLocationPermission) {
         if (map != null && hasLocationPermission) {
@@ -150,50 +177,56 @@ fun MainScreen() {
         }
     }
 
-    Scaffold(
-        topBar = {
-            Column(modifier = Modifier.background(Color.White)) {
-                RescueMapHeader()
-                RescueMapSubHeader()
-            }
-        },
-        bottomBar = {
-            RescueMapBottomNav(
-                selectedTabIndex = selectedTabIndex,
-                onTabSelected = { selectedTabIndex = it }
-            )
-        },
-        containerColor = Color(0xFFF3F4F6)
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize()
-        ) {
-            MapView(
-                modifier = Modifier.fillMaxSize(),
-                onMapReady = { map = it },
-                styleUrl = styleUrl,
-                initialCenter = LatLng(5.3, -4.0),
-                initialZoom = 12.0
-            )
-            // The large button is part of the content
-            Button(
-                onClick = { /*TODO*/ },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .align(Alignment.BottomCenter),
-                shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-            ) {
-                Text(
-                    text = "DÉPANNEZ-MOI",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(vertical = 8.dp)
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                Column(modifier = Modifier.background(Color.White)) {
+                    RescueMapHeader()
+                    RescueMapSubHeader()
+                }
+            },
+            bottomBar = {
+                RescueMapBottomNav(
+                    selectedTabIndex = selectedTabIndex,
+                    onTabSelected = { selectedTabIndex = it }
                 )
+            },
+            containerColor = Color(0xFFF3F4F6)
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .fillMaxSize()
+            ) {
+                MapView(
+                    modifier = Modifier.fillMaxSize(),
+                    onMapReady = { map = it },
+                    styleUrl = styleUrl,
+                    initialCenter = LatLng(5.3, -4.0),
+                    initialZoom = 12.0
+                )
+                // The large button is part of the content
+                Button(
+                    onClick = { showSearchInProgressModal = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .align(Alignment.BottomCenter),
+                    shape = CircleShape,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                ) {
+                    Text(
+                        text = "DÉPANNEZ-MOI",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
             }
+        }
+
+        if (showSearchInProgressModal) {
+            SearchInProgressModal(onDismiss = { showSearchInProgressModal = false })
         }
     }
 }
@@ -254,7 +287,7 @@ fun RescueMapBottomNav(
     onTabSelected: (Int) -> Unit
 ) {
     val items = listOf("Carte", "Demandes", "Profil")
-    val icons = listOf(Icons.Filled.Map, Icons.Filled.List, Icons.Filled.Person)
+    val icons = listOf(Icons.Filled.Map, Icons.AutoMirrored.Filled.List, Icons.Filled.Person)
 
     NavigationBar(
         modifier = Modifier.clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
@@ -296,6 +329,50 @@ fun RescueMapBottomNav(
                     }
                 }
             )
+        }
+    }
+}
+
+@Composable
+fun SearchInProgressModal(onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(24.dp)
+        ) {
+            Box {
+                Column(
+                    modifier = Modifier
+                        .background(Color.White.copy(alpha = 0.85f))
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = "Close")
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Recherche en cours...", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Nous recherchons les dépanneurs les plus proches de votre position.", textAlign = TextAlign.Center, color = Color.Gray)
+                    Spacer(modifier = Modifier.height(24.dp))
+                    CircularProgressIndicator(color = Color.Red)
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text("Analyse de votre position...", color = Color.Gray)
+                }
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(16.dp)
+                        .size(32.dp)
+                        .background(Color.LightGray, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("N", fontWeight = FontWeight.Bold, color = Color.Black)
+                }
+            }
         }
     }
 }
