@@ -97,6 +97,7 @@ fun ServiceProvidersSheetContent(onClose: () -> Unit) {
             ) {
                 Text("Sélectionnez un dépanneur", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
         // 'N' icon

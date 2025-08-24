@@ -31,7 +31,17 @@ fun InitialUI() {
     val icons = listOf(Icons.Filled.Map, Icons.Filled.Build, Icons.Filled.Person)
 
     var bottomSheetState by remember { mutableStateOf<BottomSheetState>(BottomSheetState.Hidden) }
-    val modalSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val modalSheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
+        confirmValueChange = { sheetValue ->
+            if (bottomSheetState is BottomSheetState.ProvidersList) {
+                // Prevent dragging down to hide when showing providers
+                sheetValue != SheetValue.Hidden
+            } else {
+                true
+            }
+        }
+    )
 
     Scaffold(
         topBar = { TopBar() },
