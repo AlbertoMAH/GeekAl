@@ -284,6 +284,20 @@ fun ProblemDetailsSheetContent(onClose: () -> Unit) {
             .fillMaxWidth()
             .padding(16.dp)
     ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text("Quel est le problème ?", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Text("Donnez des détails pour une meilleure prise en charge.", color = Color.Gray)
+            }
+            IconButton(onClick = onClose) {
+                Icon(Icons.Default.Close, contentDescription = "Close")
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -309,6 +323,7 @@ fun ProblemDetailsSheetContent(onClose: () -> Unit) {
         ) {
             Text("Envoyer la demande", modifier = Modifier.padding(vertical = 8.dp))
         }
+        Spacer(modifier = Modifier.height(100.dp))
     }
 }
 
