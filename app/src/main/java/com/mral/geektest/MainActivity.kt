@@ -263,7 +263,7 @@ fun MechanicListSheetContent(
         ) {
             Column {
                 Text("Dépanneurs à proximité", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text("Sélectionnez un professionnel pour continuer.", color = Color.Gray)
+                Text("Sélectionnez un professionnel pour continuer.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             IconButton(onClick = onClose) {
                 Icon(Icons.Default.Close, contentDescription = "Close")
@@ -283,7 +283,7 @@ fun MechanicListSheetContent(
                         }
                         .border(
                             width = if (isSelected) 2.dp else 0.dp,
-                            color = if (isSelected) Color.Red else Color.Transparent,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                             shape = RoundedCornerShape(12.dp)
                         ),
                     shape = RoundedCornerShape(12.dp)
@@ -295,7 +295,7 @@ fun MechanicListSheetContent(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .background(Color.LightGray, CircleShape),
+                                .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(service.initials, fontWeight = FontWeight.Bold)
@@ -304,10 +304,10 @@ fun MechanicListSheetContent(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(service.name, fontWeight = FontWeight.Bold)
                             Row {
-                                Icon(Icons.Default.Star, contentDescription = "Rating", tint = Color.Yellow)
+                                Icon(Icons.Default.Star, contentDescription = "Rating", tint = MaterialTheme.colorScheme.secondary)
                                 Text("${service.rating}")
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Icon(Icons.Default.Schedule, contentDescription = "Time", tint = Color.Gray)
+                                Icon(Icons.Default.Schedule, contentDescription = "Time", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(service.time)
                             }
                         }
@@ -324,7 +324,7 @@ fun MechanicListSheetContent(
             },
             enabled = selectedServiceId != null,
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)) // Pink color
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
         ) {
             Text("Sélectionnez un dépanneur", modifier = Modifier.padding(vertical = 8.dp))
         }
@@ -348,7 +348,7 @@ fun ProblemButton(
         ),
         border = BorderStroke(
             width = 1.dp,
-            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.LightGray
+            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
         )
     ) {
         Column(
@@ -359,7 +359,7 @@ fun ProblemButton(
                 icon,
                 contentDescription = label,
                 modifier = Modifier.size(24.dp),
-                tint = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray
+                tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -403,7 +403,7 @@ fun ProblemDetailsSheetContent(
             Spacer(modifier = Modifier.width(8.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text("Quel est le problème ?", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text("Donnez des détails pour une meilleure prise en charge.", color = Color.Gray)
+                Text("Donnez des détails pour une meilleure prise en charge.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             IconButton(onClick = onClose) {
                 Icon(Icons.Default.Close, contentDescription = "Close")
@@ -473,7 +473,7 @@ fun ConfirmationSheetContent(
             Spacer(modifier = Modifier.width(8.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text("Confirmez votre demande", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text("Veuillez vérifier les informations avant d'envoyer.", color = Color.Gray)
+                Text("Veuillez vérifier les informations avant d'envoyer.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             IconButton(onClick = onClose) {
                 Icon(Icons.Default.Close, contentDescription = "Close")
@@ -503,7 +503,7 @@ fun ConfirmationSheetContent(
         Button(
             onClick = onConfirm,
             modifier = Modifier.fillMaxWidth().height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)) // Rose color from mockup
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
         ) {
             Text("Confirmer et envoyer", fontSize = 18.sp, fontWeight = FontWeight.Bold)
         }
@@ -522,9 +522,9 @@ fun SummaryRow(icon: ImageVector, label: String, value: String) {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, contentDescription = label, tint = Color.Gray)
+            Icon(icon, contentDescription = label, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.width(8.dp))
-            Text(label, color = Color.Gray)
+            Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Text(value, fontWeight = FontWeight.Bold, textAlign = TextAlign.End)
     }
@@ -553,24 +553,24 @@ fun ConfirmationDialogContent(
             text = "Une fois votre demande envoyée, elle ne pourra plus être modifiée. Le déplacement d'un dépanneur requiert des moyens logistiques importants. Êtes-vous sûr de vouloir continuer ?",
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(24.dp))
         Button(
             onClick = onConfirm,
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
             Text("Envoyer ma demande", modifier = Modifier.padding(vertical = 8.dp))
         }
         Spacer(modifier = Modifier.height(8.dp))
-        Button(
+        OutlinedButton(
             onClick = onCancel,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray)
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Annuler", modifier = Modifier.padding(vertical = 8.dp), color = Color.Black)
+            Text("Annuler", modifier = Modifier.padding(vertical = 8.dp))
         }
+        Spacer(modifier = Modifier.height(50.dp))
     }
 }
 
@@ -608,7 +608,7 @@ fun SendingContent() {
         Spacer(modifier = Modifier.height(24.dp))
         Text("Envoi de la demande...", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
-        Text("Veuillez patienter.", color = Color.Gray)
+        Text("Veuillez patienter.", color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -631,7 +631,7 @@ fun SentContent() {
         Spacer(modifier = Modifier.height(24.dp))
         Text("Demande envoyée !", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
-        Text("En attente de confirmation de la part de Garage Dubois.", color = Color.Gray, textAlign = TextAlign.Center)
+        Text("En attente de confirmation de la part de Garage Dubois.", color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
     }
 }
 
@@ -643,7 +643,7 @@ fun TrackingContent() {
             .padding(16.dp)
     ) {
         Text("Demande en cours", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Text("Suivez l'avancement de votre demande en temps réel.", color = Color.Gray)
+        Text("Suivez l'avancement de votre demande en temps réel.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.height(24.dp))
 
         Card(
@@ -657,7 +657,7 @@ fun TrackingContent() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text("Suivi de votre demande", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text("#A4B7-89C1", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                    Text("#A4B7-89C1", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -672,7 +672,7 @@ fun TrackingContent() {
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
                         Text("Garage Dubois", fontWeight = FontWeight.Bold)
-                        Text("En attente", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                        Text("En attente", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                     }
                 }
                 Divider(modifier = Modifier.padding(vertical = 16.dp))
@@ -680,7 +680,7 @@ fun TrackingContent() {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Arrivée estimée :", color = Color.Gray)
+                    Text("Arrivée estimée :", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("12 minutes", fontWeight = FontWeight.Bold)
                 }
             }
@@ -690,11 +690,11 @@ fun TrackingContent() {
 
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Column {
-                Text("Votre véhicule", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Text("Votre véhicule", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("Toyota Camry (ABC-1234)", fontWeight = FontWeight.Medium)
             }
             Column {
-                Text("Problème signalé", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Text("Problème signalé", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("Moteur", fontWeight = FontWeight.Medium)
             }
         }
@@ -709,6 +709,7 @@ fun TrackingContent() {
                 Text("Envoyer un message")
             }
         }
+        Spacer(modifier = Modifier.height(50.dp))
     }
 }
 
@@ -830,23 +831,23 @@ fun RescueMapHeader() {
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .background(Color.Red, CircleShape)
+                    .background(MaterialTheme.colorScheme.primary, CircleShape)
                     .padding(8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Filled.DirectionsCar,
                     contentDescription = "Car",
-                    tint = Color.White
+                    tint = MaterialTheme.colorScheme.onPrimary
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
             Text("RescueMap", fontSize = 20.sp, fontWeight = FontWeight.Bold)
         }
         Row {
-            Icon(Icons.Filled.BugReport, contentDescription = "Bug Report", tint = Color.Gray)
+            Icon(Icons.Filled.BugReport, contentDescription = "Bug Report", tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.width(16.dp))
-            Icon(Icons.Filled.Settings, contentDescription = "Settings", tint = Color.Gray)
+            Icon(Icons.Filled.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -859,11 +860,11 @@ fun RescueMapSubHeader() {
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(Icons.Filled.LocationOn, contentDescription = "Location", tint = Color.Gray)
+        Icon(Icons.Filled.LocationOn, contentDescription = "Location", tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.width(4.dp))
-        Text("123 Rue Fictive, Paris", color = Color.Gray)
+        Text("123 Rue Fictive, Paris", color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.width(8.dp))
-        Icon(Icons.Filled.Refresh, contentDescription = "Refresh", tint = Color.Gray)
+        Icon(Icons.Filled.Refresh, contentDescription = "Refresh", tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -877,7 +878,7 @@ fun RescueMapBottomNav(
 
     NavigationBar(
         modifier = Modifier.clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
-        containerColor = Color.White
+        containerColor = MaterialTheme.colorScheme.surface
     ) {
         items.forEachIndexed { index, item ->
             val isSelected = selectedTabIndex == index
@@ -887,7 +888,7 @@ fun RescueMapBottomNav(
                 label = {
                     Text(
                         text = item,
-                        color = if (isSelected) Color.Red else Color.Gray
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 },
                 icon = {
@@ -895,7 +896,7 @@ fun RescueMapBottomNav(
                         Box(
                             modifier = Modifier
                                 .background(
-                                    if (isSelected) Color.Red else Color.LightGray,
+                                    if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
                                     shape = RoundedCornerShape(8.dp)
                                 )
                                 .padding(4.dp)
@@ -903,14 +904,14 @@ fun RescueMapBottomNav(
                             Icon(
                                 imageVector = icons[index],
                                 contentDescription = item,
-                                tint = if (isSelected) Color.White else Color.Gray
+                                tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     } else {
                         Icon(
                             imageVector = icons[index],
                             contentDescription = item,
-                            tint = if (isSelected) Color.Red else Color.Gray
+                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
