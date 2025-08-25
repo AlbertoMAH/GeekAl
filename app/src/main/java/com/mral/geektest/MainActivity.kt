@@ -394,9 +394,9 @@ fun ProblemDetailsForm(
                     border = BorderStroke(width = if (isSelected) 0.dp else 1.dp, color = if (isSelected) Color.Transparent else MaterialTheme.colorScheme.outline)
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                        Icon(icon, contentDescription = type, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(type, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold, fontSize = 10.sp)
+                        Icon(icon, contentDescription = type, modifier = Modifier.size(24.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(type, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                     }
                 }
             }
@@ -463,9 +463,9 @@ fun ProblemDetailsForm(
                     border = BorderStroke(width = if (isSelected) 0.dp else 1.dp, color = if (isSelected) Color.Transparent else MaterialTheme.colorScheme.outline)
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                        Icon(icon, contentDescription = type, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(type, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold, fontSize = 10.sp)
+                        Icon(icon, contentDescription = type, modifier = Modifier.size(24.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(type, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                     }
                 }
             }
