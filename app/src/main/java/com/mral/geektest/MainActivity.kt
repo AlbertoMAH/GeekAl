@@ -362,7 +362,7 @@ fun SelectionButton(
 
     OutlinedButton(
         onClick = onClick,
-        modifier = modifier.height(120.dp),
+        modifier = modifier.height(100.dp),
         shape = RoundedCornerShape(16.dp),
         colors = colors,
         border = BorderStroke(
