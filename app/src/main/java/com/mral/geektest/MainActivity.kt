@@ -379,10 +379,10 @@ fun ProblemDetailsForm(
             modifier = Modifier.padding(vertical = 16.dp)
         )
         LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
+            columns = GridCells.Fixed(3),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.height(226.dp)
+            modifier = Modifier.height(150.dp)
         ) {
             items(breakdownOptions) { (type, icon) ->
                 val isSelected = breakdownType == type
