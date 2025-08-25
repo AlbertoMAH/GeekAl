@@ -382,21 +382,21 @@ fun ProblemDetailsForm(
             columns = GridCells.Fixed(2),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.height(224.dp)
+            modifier = Modifier.height(256.dp)
         ) {
             items(breakdownOptions) { (type, icon) ->
                 val isSelected = breakdownType == type
                 OutlinedButton(
                     onClick = { breakdownType = type },
-                    modifier = Modifier.height(90.dp),
+                    modifier = Modifier.height(80.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = if (isSelected) ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary) else ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
                     border = BorderStroke(width = if (isSelected) 0.dp else 1.dp, color = if (isSelected) Color.Transparent else MaterialTheme.colorScheme.outline)
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                        Icon(icon, contentDescription = type, modifier = Modifier.size(28.dp))
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(type, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                        Icon(icon, contentDescription = type, modifier = Modifier.size(24.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(type, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                     }
                 }
             }
@@ -451,21 +451,21 @@ fun ProblemDetailsForm(
             columns = GridCells.Fixed(3),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.height(110.dp)
+            modifier = Modifier.height(88.dp)
         ) {
             items(locationOptions) { (type, icon) ->
                 val isSelected = location == type
                  OutlinedButton(
                     onClick = { location = type },
-                    modifier = Modifier.height(90.dp),
+                    modifier = Modifier.height(80.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = if (isSelected) ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary) else ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
                     border = BorderStroke(width = if (isSelected) 0.dp else 1.dp, color = if (isSelected) Color.Transparent else MaterialTheme.colorScheme.outline)
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                        Icon(icon, contentDescription = type, modifier = Modifier.size(28.dp))
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(type, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                        Icon(icon, contentDescription = type, modifier = Modifier.size(24.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(type, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                     }
                 }
             }
