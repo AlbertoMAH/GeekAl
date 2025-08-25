@@ -60,7 +60,6 @@ import androidx.compose.material.icons.filled.LocalParking
 import androidx.compose.material.icons.filled.ReportProblem
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Siren
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
@@ -449,7 +448,7 @@ fun ProblemDetailsSheetContent(
         "Moteur" to Icons.Default.Build,
         "Pneu" to Icons.Default.DirectionsCar,
         "Essence" to Icons.Default.LocalGasStation,
-        "Autre" to Icons.Default.Siren
+        "Autre" to Icons.Default.ReportProblem // Using ReportProblem as a workaround
     )
     val locationOptions = listOf(
         "Route" to Icons.Default.Route,
