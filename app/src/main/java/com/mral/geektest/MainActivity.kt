@@ -46,6 +46,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Construction
 import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
@@ -55,8 +56,11 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.LocalGasStation
+import androidx.compose.material.icons.filled.LocalParking
 import androidx.compose.material.icons.filled.ReportProblem
+import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Siren
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
@@ -143,7 +147,10 @@ sealed class BottomSheetWorkflowState {
     data class Confirmation(
         val serviceProvider: ServiceProvider,
         val problem: String,
-        val description: String
+        val description: String,
+        val vehicleInfo: String,
+        val location: String?,
+        val isPhotoAdded: Boolean
     ) : BottomSheetWorkflowState()
 }
 
@@ -201,11 +208,14 @@ fun BottomSheetContent(onClose: () -> Unit) {
                     serviceProvider = state.serviceProvider,
                     onClose = onClose,
                     onBack = { workflowState = BottomSheetWorkflowState.Results },
-                    onConfirm = { problem, description ->
+                    onConfirm = { breakdownType, breakdownDescription, vehicleInfo, location, isPhotoAdded ->
                         workflowState = BottomSheetWorkflowState.Confirmation(
                             serviceProvider = state.serviceProvider,
-                            problem = problem,
-                            description = description
+                            problem = breakdownType,
+                            description = breakdownDescription,
+                            vehicleInfo = vehicleInfo,
+                            location = location,
+                            isPhotoAdded = isPhotoAdded
                         )
                     }
                 )
@@ -333,6 +343,46 @@ fun MechanicListSheetContent(
 }
 
 @Composable
+fun SelectionButton(
+    text: String,
+    icon: ImageVector,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val colors = if (isSelected) {
+        ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        )
+    } else {
+        ButtonDefaults.outlinedButtonColors(
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier.height(120.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = colors,
+        border = BorderStroke(
+            width = if (isSelected) 0.dp else 1.dp,
+            color = if (isSelected) Color.Transparent else MaterialTheme.colorScheme.outline
+        )
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(icon, contentDescription = text, modifier = Modifier.size(32.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+@Composable
 fun ProblemButton(
     icon: ImageVector,
     label: String,
@@ -376,77 +426,142 @@ fun ProblemDetailsSheetContent(
     serviceProvider: ServiceProvider,
     onClose: () -> Unit,
     onBack: () -> Unit,
-    onConfirm: (problem: String, description: String) -> Unit
+    onConfirm: (
+        breakdownType: String,
+        breakdownDescription: String,
+        vehicleInfo: String,
+        location: String?,
+        isPhotoAdded: Boolean
+    ) -> Unit
 ) {
-    var selectedProblem by remember { mutableStateOf<String?>(null) }
-    var description by remember { mutableStateOf("") }
-    val problems = listOf(
+    // State Management
+    var breakdownType by remember { mutableStateOf<String?>(null) }
+    var breakdownDescription by remember { mutableStateOf("") }
+    var vehicleInfo by remember { mutableStateOf("") }
+    var location by remember { mutableStateOf<String?>(null) }
+    var isPhotoAdded by remember { mutableStateOf(false) }
+
+    val isFormValid = breakdownType != null && (breakdownType != "Autre" || breakdownDescription.trim().isNotEmpty())
+
+    // Data for the sections
+    val breakdownOptions = listOf(
         "Batterie" to Icons.Default.BatteryChargingFull,
-        "Pneu crevé" to Icons.Default.Build, // Using Build for Wrench
-        "Panne d'essence" to Icons.Default.LocalGasStation,
-        "Moteur" to Icons.Default.ReportProblem,
-        "Autre" to Icons.Default.Build, // Using Build for Wrench
+        "Moteur" to Icons.Default.Build,
+        "Pneu" to Icons.Default.DirectionsCar,
+        "Essence" to Icons.Default.LocalGasStation,
+        "Autre" to Icons.Default.Siren
+    )
+    val locationOptions = listOf(
+        "Route" to Icons.Default.Route,
+        "Parking" to Icons.Default.LocalParking,
+        "Domicile" to Icons.Default.Home
     )
 
+    // UI Layout
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
+            .verticalScroll(rememberScrollState())
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text("Quel est le problème ?", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text("Donnez des détails pour une meilleure prise en charge.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            IconButton(onClick = onClose) {
-                Icon(Icons.Default.Close, contentDescription = "Close")
-            }
-        }
+        // Header
+        Text("Quel est le problème ?", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+        Text("Donnez des détails pour une meilleure prise en charge.", style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.height(16.dp))
+        Divider()
+
+        // Breakdown Type
+        Text("Type de panne", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 16.dp))
         LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
+            columns = GridCells.Fixed(3),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.height(130.dp) // Fixed height for the grid
         ) {
-            items(problems) { (label, icon) ->
-                val isSelected = selectedProblem == label
-                ProblemButton(
-                    icon = icon,
-                    label = label,
-                    isSelected = isSelected,
-                    onClick = { selectedProblem = label }
-                )
+            items(breakdownOptions) { (type, icon) ->
+                SelectionButton(text = type, icon = icon, isSelected = breakdownType == type, onClick = { breakdownType = type })
             }
         }
-        Spacer(modifier = Modifier.height(16.dp))
+
+        // Conditional Description
+        if (breakdownType == "Autre") {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Description du problème", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            OutlinedTextField(
+                value = breakdownDescription,
+                onValueChange = { breakdownDescription = it },
+                placeholder = { Text("Veuillez décrire votre problème en détail...") },
+                modifier = Modifier.fillMaxWidth().height(120.dp)
+            )
+        }
+
+        Divider(modifier = Modifier.padding(vertical = 16.dp))
+
+        // Vehicle Info
+        Text("Marque et modèle du véhicule", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
-            value = description,
-            onValueChange = { description = it },
-            placeholder = { Text("Décrivez le problème plus en détail") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(128.dp)
+            value = vehicleInfo,
+            onValueChange = { vehicleInfo = it },
+            placeholder = { Text("Ex : Tesla Model 3") },
+            modifier = Modifier.fillMaxWidth()
         )
-        Spacer(modifier = Modifier.height(16.dp))
+
+        Divider(modifier = Modifier.padding(vertical = 16.dp))
+
+        // Location
+        Text("Lieu de l'incident", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(8.dp))
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(3),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.height(130.dp)
+        ) {
+            items(locationOptions) { (type, icon) ->
+                SelectionButton(text = type, icon = icon, isSelected = location == type, onClick = { location = type })
+            }
+        }
+
+        Divider(modifier = Modifier.padding(vertical = 16.dp))
+
+        // Photo Button
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            Button(
+                onClick = { isPhotoAdded = !isPhotoAdded },
+                colors = if(isPhotoAdded) ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)) else ButtonDefaults.buttonColors()
+            ) {
+                if (isPhotoAdded) {
+                    Icon(Icons.Default.CheckCircle, contentDescription = "Photo Added", modifier = Modifier.size(ButtonDefaults.IconSize))
+                    Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
+                    Text("Photo ajoutée ✓")
+                } else {
+                    Icon(Icons.Default.CameraAlt, contentDescription = "Add Photo", modifier = Modifier.size(ButtonDefaults.IconSize))
+                    Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
+                    Text("Ajouter une photo")
+                }
+            }
+        }
+
+        // Continue Button
+        Spacer(modifier = Modifier.height(24.dp))
         Button(
             onClick = {
-                selectedProblem?.let { problem ->
-                    onConfirm(problem, description)
+                breakdownType?.let {
+                    onConfirm(
+                        it,
+                        breakdownDescription,
+                        vehicleInfo,
+                        location,
+                        isPhotoAdded
+                    )
                 }
             },
-            enabled = selectedProblem != null,
-            modifier = Modifier.fillMaxWidth()
+            enabled = isFormValid,
+            modifier = Modifier.fillMaxWidth().height(56.dp)
         ) {
-            Text("Envoyer la demande", modifier = Modifier.padding(vertical = 8.dp))
+            Text("Continuer", fontSize = 18.sp)
         }
-        Spacer(modifier = Modifier.height(50.dp))
     }
 }
 
