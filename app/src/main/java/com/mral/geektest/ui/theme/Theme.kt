@@ -50,7 +50,7 @@ private val LightColorScheme = lightColorScheme(
 )
 
 @Composable
-fun MyComposeApplicationTheme(darkTheme: Boolean = isSystemInDarkTheme(),
+fun MyComposeApplicationTheme(darkTheme: Boolean = false, // Always light mode
     // Dynamic color is available on Android 12+
                               dynamicColor: Boolean = true,
                               content: @Composable () -> Unit
