@@ -7,6 +7,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -36,6 +42,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CarCrash
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Construction
 import androidx.compose.material.icons.filled.BugReport
@@ -140,50 +147,99 @@ sealed class BottomSheetWorkflowState {
     ) : BottomSheetWorkflowState()
 }
 
+sealed class RequestStatus {
+    object Confirmation : RequestStatus()
+    object Sending : RequestStatus()
+    object Sent : RequestStatus()
+    object Tracking : RequestStatus()
+}
+
 @Composable
 fun BottomSheetContent(onClose: () -> Unit) {
     var workflowState by remember { mutableStateOf<BottomSheetWorkflowState>(BottomSheetWorkflowState.Searching) }
+    var requestStatus by remember { mutableStateOf<RequestStatus?>(null) }
 
-    LaunchedEffect(workflowState) {
-        if (workflowState is BottomSheetWorkflowState.Searching) {
-            delay(5000)
-            workflowState = BottomSheetWorkflowState.Results
+    LaunchedEffect(requestStatus) {
+        when (requestStatus) {
+            is RequestStatus.Sending -> {
+                delay(3000)
+                requestStatus = RequestStatus.Sent
+            }
+            is RequestStatus.Sent -> {
+                delay(2000)
+                requestStatus = RequestStatus.Tracking
+            }
+            else -> {
+                // No action needed for other states
+            }
         }
     }
 
-    when (val state = workflowState) {
-        is BottomSheetWorkflowState.Searching -> {
-            SearchInProgressSheetContent(onClose = onClose)
+    if (requestStatus == null) {
+        // Initial workflow to gather information
+        LaunchedEffect(workflowState) {
+            if (workflowState is BottomSheetWorkflowState.Searching) {
+                delay(5000)
+                workflowState = BottomSheetWorkflowState.Results
+            }
         }
-        is BottomSheetWorkflowState.Results -> {
-            MechanicListSheetContent(
-                onClose = onClose,
-                onConfirm = { serviceProvider ->
-                    workflowState = BottomSheetWorkflowState.ProblemDetails(serviceProvider)
-                }
-            )
+
+        when (val state = workflowState) {
+            is BottomSheetWorkflowState.Searching -> {
+                SearchInProgressSheetContent(onClose = onClose)
+            }
+            is BottomSheetWorkflowState.Results -> {
+                MechanicListSheetContent(
+                    onClose = onClose,
+                    onConfirm = { serviceProvider ->
+                        workflowState = BottomSheetWorkflowState.ProblemDetails(serviceProvider)
+                    }
+                )
+            }
+            is BottomSheetWorkflowState.ProblemDetails -> {
+                ProblemDetailsSheetContent(
+                    serviceProvider = state.serviceProvider,
+                    onClose = onClose,
+                    onBack = { workflowState = BottomSheetWorkflowState.Results },
+                    onConfirm = { problem, description ->
+                        workflowState = BottomSheetWorkflowState.Confirmation(
+                            serviceProvider = state.serviceProvider,
+                            problem = problem,
+                            description = description
+                        )
+                    }
+                )
+            }
+            is BottomSheetWorkflowState.Confirmation -> {
+                ConfirmationSheetContent(
+                    state = state,
+                    onClose = onClose,
+                    onBack = { workflowState = BottomSheetWorkflowState.ProblemDetails(state.serviceProvider) },
+                    onConfirm = { requestStatus = RequestStatus.Confirmation }
+                )
+            }
         }
-        is BottomSheetWorkflowState.ProblemDetails -> {
-            ProblemDetailsSheetContent(
-                serviceProvider = state.serviceProvider,
-                onClose = onClose,
-                onBack = { workflowState = BottomSheetWorkflowState.Results },
-                onConfirm = { problem, description ->
-                    workflowState = BottomSheetWorkflowState.Confirmation(
-                        serviceProvider = state.serviceProvider,
-                        problem = problem,
-                        description = description
-                    )
-                }
-            )
-        }
-        is BottomSheetWorkflowState.Confirmation -> {
-            ConfirmationSheetContent(
-                state = state,
-                onClose = onClose,
-                onBack = { workflowState = BottomSheetWorkflowState.ProblemDetails(state.serviceProvider) },
-                onConfirm = { /* TODO: Final action */ }
-            )
+    } else {
+        // Post-confirmation workflow
+        when (requestStatus) {
+            is RequestStatus.Confirmation -> {
+                ConfirmationDialogContent(
+                    onConfirm = { requestStatus = RequestStatus.Sending },
+                    onCancel = { requestStatus = null }
+                )
+            }
+            is RequestStatus.Sending -> {
+                SendingContent()
+            }
+            is RequestStatus.Sent -> {
+                SentContent()
+            }
+            is RequestStatus.Tracking -> {
+                TrackingContent()
+            }
+            null -> {
+                // Should not happen in this branch
+            }
         }
     }
 }
@@ -473,6 +529,189 @@ fun SummaryRow(icon: ImageVector, label: String, value: String) {
         Text(value, fontWeight = FontWeight.Bold, textAlign = TextAlign.End)
     }
 }
+
+@Composable
+fun ConfirmationDialogContent(
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "Confirmation requise",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Une fois votre demande envoyée, elle ne pourra plus être modifiée. Le déplacement d'un dépanneur requiert des moyens logistiques importants. Êtes-vous sûr de vouloir continuer ?",
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.Gray
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Button(
+            onClick = onConfirm,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+        ) {
+            Text("Envoyer ma demande", modifier = Modifier.padding(vertical = 8.dp))
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(
+            onClick = onCancel,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray)
+        ) {
+            Text("Annuler", modifier = Modifier.padding(vertical = 8.dp), color = Color.Black)
+        }
+    }
+}
+
+@Composable
+fun SendingContent() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(500.dp)
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.size(144.dp)
+        ) {
+            val infiniteTransition = rememberInfiniteTransition(label = "sending_spinner")
+            val angle by infiniteTransition.animateFloat(
+                initialValue = 0f,
+                targetValue = 360f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(2000, easing = LinearEasing),
+                    repeatMode = RepeatMode.Restart
+                ),
+                label = "angle"
+            )
+
+            CircularProgressIndicator(
+                modifier = Modifier.size(112.dp),
+                strokeWidth = 4.dp
+            )
+            Text("N", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        Text("Envoi de la demande...", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text("Veuillez patienter.", color = Color.Gray)
+    }
+}
+
+@Composable
+fun SentContent() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(500.dp)
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.CheckCircle,
+            contentDescription = "Success",
+            tint = Color(0xFF4CAF50), // Green color
+            modifier = Modifier.size(64.dp)
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Text("Demande envoyée !", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text("En attente de confirmation de la part de Garage Dubois.", color = Color.Gray, textAlign = TextAlign.Center)
+    }
+}
+
+@Composable
+fun TrackingContent() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        Text("Demande en cours", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Text("Suivez l'avancement de votre demande en temps réel.", color = Color.Gray)
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Suivi de votre demande", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("#A4B7-89C1", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("GD", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text("Garage Dubois", fontWeight = FontWeight.Bold)
+                        Text("En attente", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+                Divider(modifier = Modifier.padding(vertical = 16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Arrivée estimée :", color = Color.Gray)
+                    Text("12 minutes", fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column {
+                Text("Votre véhicule", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Text("Toyota Camry (ABC-1234)", fontWeight = FontWeight.Medium)
+            }
+            Column {
+                Text("Problème signalé", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Text("Moteur", fontWeight = FontWeight.Medium)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = { /*TODO*/ }, modifier = Modifier.fillMaxWidth()) {
+                Text("Appeler le dépanneur")
+            }
+            OutlinedButton(onClick = { /*TODO*/ }, modifier = Modifier.fillMaxWidth()) {
+                Text("Envoyer un message")
+            }
+        }
+    }
+}
+
 
 sealed class SheetContentState {
     object Home : SheetContentState()
