@@ -388,15 +388,15 @@ fun ProblemDetailsForm(
                 val isSelected = breakdownType == type
                 OutlinedButton(
                     onClick = { breakdownType = type },
-                    modifier = Modifier.height(100.dp),
+                    modifier = Modifier.height(90.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = if (isSelected) ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary) else ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
                     border = BorderStroke(width = if (isSelected) 0.dp else 1.dp, color = if (isSelected) Color.Transparent else MaterialTheme.colorScheme.outline)
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                        Icon(icon, contentDescription = type, modifier = Modifier.size(32.dp))
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(type, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold)
+                        Icon(icon, contentDescription = type, modifier = Modifier.size(28.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(type, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                     }
                 }
             }
@@ -457,15 +457,15 @@ fun ProblemDetailsForm(
                 val isSelected = location == type
                  OutlinedButton(
                     onClick = { location = type },
-                    modifier = Modifier.height(100.dp),
+                    modifier = Modifier.height(90.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = if (isSelected) ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary) else ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
                     border = BorderStroke(width = if (isSelected) 0.dp else 1.dp, color = if (isSelected) Color.Transparent else MaterialTheme.colorScheme.outline)
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                        Icon(icon, contentDescription = type, modifier = Modifier.size(32.dp))
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(type, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold)
+                        Icon(icon, contentDescription = type, modifier = Modifier.size(28.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(type, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                     }
                 }
             }
