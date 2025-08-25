@@ -52,7 +52,10 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.LocalGasStation
@@ -153,102 +156,73 @@ sealed class BottomSheetWorkflowState {
     ) : BottomSheetWorkflowState()
 }
 
-sealed class RequestStatus {
-    object Confirmation : RequestStatus()
-    object Sending : RequestStatus()
-    object Sent : RequestStatus()
-    object Tracking : RequestStatus()
-}
-
 @Composable
 fun BottomSheetContent(onClose: () -> Unit) {
     var workflowState by remember { mutableStateOf<BottomSheetWorkflowState>(BottomSheetWorkflowState.Searching) }
-    var requestStatus by remember { mutableStateOf<RequestStatus?>(null) }
+    var uiState by remember { mutableStateOf("form") }
+    var requestDetails by remember { mutableStateOf<BottomSheetWorkflowState.Confirmation?>(null) }
 
-    LaunchedEffect(requestStatus) {
-        when (requestStatus) {
-            is RequestStatus.Sending -> {
-                delay(3000)
-                requestStatus = RequestStatus.Sent
-            }
-            is RequestStatus.Sent -> {
-                delay(2000)
-                requestStatus = RequestStatus.Tracking
-            }
-            else -> {
-                // No action needed for other states
-            }
+
+    LaunchedEffect(workflowState) {
+        if (workflowState is BottomSheetWorkflowState.Searching) {
+            delay(5000)
+            workflowState = BottomSheetWorkflowState.Results
         }
     }
 
-    if (requestStatus == null) {
-        // Initial workflow to gather information
-        LaunchedEffect(workflowState) {
-            if (workflowState is BottomSheetWorkflowState.Searching) {
-                delay(5000)
-                workflowState = BottomSheetWorkflowState.Results
-            }
+    when (val state = workflowState) {
+        is BottomSheetWorkflowState.Searching -> {
+            SearchInProgressSheetContent(onClose = onClose)
         }
-
-        when (val state = workflowState) {
-            is BottomSheetWorkflowState.Searching -> {
-                SearchInProgressSheetContent(onClose = onClose)
-            }
-            is BottomSheetWorkflowState.Results -> {
-                MechanicListSheetContent(
-                    onClose = onClose,
-                    onConfirm = { serviceProvider ->
-                        workflowState = BottomSheetWorkflowState.ProblemDetails(serviceProvider)
-                    }
-                )
-            }
-            is BottomSheetWorkflowState.ProblemDetails -> {
-                ProblemDetailsSheetContent(
-                    serviceProvider = state.serviceProvider,
-                    onClose = onClose,
-                    onBack = { workflowState = BottomSheetWorkflowState.Results },
-                    onConfirm = { breakdownType, breakdownDescription, vehicleInfo, location, isPhotoAdded ->
-                        workflowState = BottomSheetWorkflowState.Confirmation(
-                            serviceProvider = state.serviceProvider,
+        is BottomSheetWorkflowState.Results -> {
+            MechanicListSheetContent(
+                onClose = onClose,
+                onConfirm = { serviceProvider ->
+                    // We have the service provider, move to the problem details state
+                    // and prepare the data for the new form.
+                    requestDetails = BottomSheetWorkflowState.Confirmation(
+                        serviceProvider = serviceProvider,
+                        problem = "", // Will be filled by the form
+                        description = "", // Will be filled by the form
+                        vehicleInfo = "", // Will be filled by the form
+                        location = null, // Will be filled by the form
+                        isPhotoAdded = false // Will be filled by the form
+                    )
+                    workflowState = BottomSheetWorkflowState.ProblemDetails(serviceProvider)
+                }
+            )
+        }
+        is BottomSheetWorkflowState.ProblemDetails -> {
+            if (uiState == "form") {
+                ProblemDetailsForm(
+                    onContinueClick = { breakdownType, breakdownDescription, vehicleInfo, location, isPhotoAdded ->
+                        // Update the request details with the form data
+                        requestDetails = requestDetails?.copy(
                             problem = breakdownType,
                             description = breakdownDescription,
                             vehicleInfo = vehicleInfo,
                             location = location,
                             isPhotoAdded = isPhotoAdded
                         )
+                        // Transition to the tracking screen
+                        uiState = "tracking"
                     }
                 )
-            }
-            is BottomSheetWorkflowState.Confirmation -> {
-                ConfirmationSheetContent(
-                    state = state,
-                    onClose = onClose,
-                    onBack = { workflowState = BottomSheetWorkflowState.ProblemDetails(state.serviceProvider) },
-                    onConfirm = { requestStatus = RequestStatus.Confirmation }
-                )
+            } else { // uiState == "tracking"
+                requestDetails?.let {
+                    ActiveRequestCard(
+                        requestDetails = it,
+                        onCancel = {
+                            // Reset the UI state to go back to the form
+                            uiState = "form"
+                        }
+                    )
+                }
             }
         }
-    } else {
-        // Post-confirmation workflow
-        when (requestStatus) {
-            is RequestStatus.Confirmation -> {
-                ConfirmationDialogContent(
-                    onConfirm = { requestStatus = RequestStatus.Sending },
-                    onCancel = { requestStatus = null }
-                )
-            }
-            is RequestStatus.Sending -> {
-                SendingContent()
-            }
-            is RequestStatus.Sent -> {
-                SentContent()
-            }
-            is RequestStatus.Tracking -> {
-                TrackingContent()
-            }
-            null -> {
-                // Should not happen in this branch
-            }
+        is BottomSheetWorkflowState.Confirmation -> {
+            // This state is now handled within the new workflow.
+            // We can leave this empty or navigate back if reached unexpectedly.
         }
     }
 }
@@ -342,90 +316,8 @@ fun MechanicListSheetContent(
 }
 
 @Composable
-fun SelectionButton(
-    text: String,
-    icon: ImageVector,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val colors = if (isSelected) {
-        ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
-        )
-    } else {
-        ButtonDefaults.outlinedButtonColors(
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier.height(100.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = colors,
-        border = BorderStroke(
-            width = if (isSelected) 0.dp else 1.dp,
-            color = if (isSelected) Color.Transparent else MaterialTheme.colorScheme.outline
-        )
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Icon(icon, contentDescription = text, modifier = Modifier.size(32.dp))
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold)
-        }
-    }
-}
-
-@Composable
-fun ProblemButton(
-    icon: ImageVector,
-    label: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = ButtonDefaults.outlinedButtonColors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else Color.Transparent
-        ),
-        border = BorderStroke(
-            width = 1.dp,
-            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
-        )
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(vertical = 16.dp)
-        ) {
-            Icon(
-                icon,
-                contentDescription = label,
-                modifier = Modifier.size(24.dp),
-                tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                label,
-                textAlign = TextAlign.Center,
-                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Unspecified
-            )
-        }
-    }
-}
-
-@Composable
-fun ProblemDetailsSheetContent(
-    serviceProvider: ServiceProvider,
-    onClose: () -> Unit,
-    onBack: () -> Unit,
-    onConfirm: (
+fun ProblemDetailsForm(
+    onContinueClick: (
         breakdownType: String,
         breakdownDescription: String,
         vehicleInfo: String,
@@ -433,56 +325,83 @@ fun ProblemDetailsSheetContent(
         isPhotoAdded: Boolean
     ) -> Unit
 ) {
-    // State Management
     var breakdownType by remember { mutableStateOf<String?>(null) }
     var breakdownDescription by remember { mutableStateOf("") }
     var vehicleInfo by remember { mutableStateOf("") }
     var location by remember { mutableStateOf<String?>(null) }
     var isPhotoAdded by remember { mutableStateOf(false) }
+    var vehicleInfoError by remember { mutableStateOf(false) }
 
-    val isFormValid = breakdownType != null && (breakdownType != "Autre" || breakdownDescription.trim().isNotEmpty())
+    val isFormValid = breakdownType != null && (breakdownType != "Autre" || breakdownDescription.trim().isNotEmpty()) && !vehicleInfoError && vehicleInfo.trim().isNotEmpty()
 
-    // Data for the sections
     val breakdownOptions = listOf(
         "Batterie" to Icons.Default.BatteryChargingFull,
         "Moteur" to Icons.Default.Build,
         "Pneu" to Icons.Default.DirectionsCar,
         "Essence" to Icons.Default.LocalGasStation,
-        "Autre" to Icons.Default.ReportProblem // Using ReportProblem as a workaround
+        "Autre" to Icons.Default.ReportProblem
     )
+
     val locationOptions = listOf(
         "Route" to Icons.Default.Route,
         "Parking" to Icons.Default.LocalParking,
         "Domicile" to Icons.Default.Home
     )
 
-    // UI Layout
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        // Header
-        Text("Quel est le problème ?", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-        Text("Donnez des détails pour une meilleure prise en charge.", style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            text = "Quel est le problème ?",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Text(
+            text = "Donnez des détails pour une meilleure prise en charge.",
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
         Spacer(modifier = Modifier.height(16.dp))
         Divider()
 
-        // Breakdown Type
-        Text("Type de panne", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 16.dp))
+        // Type de panne
+        Text(
+            text = "Type de panne",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(vertical = 16.dp)
+        )
         LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
+            columns = GridCells.Fixed(2),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.height(130.dp) // Fixed height for the grid
+            modifier = Modifier.height(224.dp)
         ) {
             items(breakdownOptions) { (type, icon) ->
-                SelectionButton(text = type, icon = icon, isSelected = breakdownType == type, onClick = { breakdownType = type })
+                val isSelected = breakdownType == type
+                OutlinedButton(
+                    onClick = { breakdownType = type },
+                    modifier = Modifier.height(100.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = if (isSelected) ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary) else ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
+                    border = BorderStroke(width = if (isSelected) 0.dp else 1.dp, color = if (isSelected) Color.Transparent else MaterialTheme.colorScheme.outline)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                        Icon(icon, contentDescription = type, modifier = Modifier.size(32.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(type, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold)
+                    }
+                }
             }
         }
 
-        // Conditional Description
         if (breakdownType == "Autre") {
             Spacer(modifier = Modifier.height(16.dp))
             Text("Description du problème", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
@@ -490,74 +409,116 @@ fun ProblemDetailsSheetContent(
                 value = breakdownDescription,
                 onValueChange = { breakdownDescription = it },
                 placeholder = { Text("Veuillez décrire votre problème en détail...") },
-                modifier = Modifier.fillMaxWidth().height(120.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp),
+                shape = RoundedCornerShape(12.dp)
             )
         }
 
-        Divider(modifier = Modifier.padding(vertical = 16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+        Divider()
+        Spacer(modifier = Modifier.height(16.dp))
 
-        // Vehicle Info
+        // Marque et modèle du véhicule
         Text("Marque et modèle du véhicule", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
             value = vehicleInfo,
-            onValueChange = { vehicleInfo = it },
+            onValueChange = {
+                vehicleInfo = it
+                if (vehicleInfoError) {
+                    vehicleInfoError = false
+                }
+            },
             placeholder = { Text("Ex : Tesla Model 3") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            isError = vehicleInfoError,
+            shape = RoundedCornerShape(12.dp)
         )
+        if (vehicleInfoError) {
+            Text("Veuillez entrer le modèle de votre véhicule.", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(start = 16.dp))
+        }
 
-        Divider(modifier = Modifier.padding(vertical = 16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+        Divider()
+        Spacer(modifier = Modifier.height(16.dp))
 
-        // Location
+        // Lieu de l'incident
         Text("Lieu de l'incident", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
         LazyVerticalGrid(
             columns = GridCells.Fixed(3),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.height(130.dp)
+            modifier = Modifier.height(110.dp)
         ) {
             items(locationOptions) { (type, icon) ->
-                SelectionButton(text = type, icon = icon, isSelected = location == type, onClick = { location = type })
+                val isSelected = location == type
+                 OutlinedButton(
+                    onClick = { location = type },
+                    modifier = Modifier.height(100.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = if (isSelected) ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary) else ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
+                    border = BorderStroke(width = if (isSelected) 0.dp else 1.dp, color = if (isSelected) Color.Transparent else MaterialTheme.colorScheme.outline)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                        Icon(icon, contentDescription = type, modifier = Modifier.size(32.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(type, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold)
+                    }
+                }
             }
         }
 
-        Divider(modifier = Modifier.padding(vertical = 16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+        Divider()
+        Spacer(modifier = Modifier.height(16.dp))
 
-        // Photo Button
+        // Bouton pour ajouter une photo
         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             Button(
                 onClick = { isPhotoAdded = !isPhotoAdded },
-                colors = if(isPhotoAdded) ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)) else ButtonDefaults.buttonColors()
+                colors = if (isPhotoAdded) ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)) else ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
+                shape = CircleShape,
+                modifier = Modifier.fillMaxWidth(0.8f).height(50.dp)
             ) {
                 if (isPhotoAdded) {
-                    Icon(Icons.Default.CheckCircle, contentDescription = "Photo Added", modifier = Modifier.size(ButtonDefaults.IconSize))
-                    Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
+                    Icon(Icons.Default.CheckCircle, contentDescription = "Photo Added")
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text("Photo ajoutée ✓")
                 } else {
-                    Icon(Icons.Default.CameraAlt, contentDescription = "Add Photo", modifier = Modifier.size(ButtonDefaults.IconSize))
-                    Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
+                    Icon(Icons.Default.CameraAlt, contentDescription = "Add Photo")
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text("Ajouter une photo")
                 }
             }
         }
 
-        // Continue Button
         Spacer(modifier = Modifier.height(24.dp))
+
+        // Bouton Continuer
         Button(
             onClick = {
-                breakdownType?.let {
-                    onConfirm(
-                        it,
-                        breakdownDescription,
-                        vehicleInfo,
-                        location,
-                        isPhotoAdded
-                    )
+                if (vehicleInfo.trim().isEmpty()) {
+                    vehicleInfoError = true
+                } else {
+                    breakdownType?.let {
+                        onContinueClick(
+                            it,
+                            breakdownDescription,
+                            vehicleInfo,
+                            location,
+                            isPhotoAdded
+                        )
+                    }
                 }
             },
             enabled = isFormValid,
-            modifier = Modifier.fillMaxWidth().height(56.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(16.dp)
         ) {
             Text("Continuer", fontSize = 18.sp)
         }
@@ -565,63 +526,136 @@ fun ProblemDetailsSheetContent(
 }
 
 @Composable
-fun ConfirmationSheetContent(
-    state: BottomSheetWorkflowState.Confirmation,
-    onClose: () -> Unit,
-    onBack: () -> Unit,
-    onConfirm: () -> Unit
+fun Avatar(name: String, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text = name, color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+fun ActiveRequestCard(
+    requestDetails: BottomSheetWorkflowState.Confirmation,
+    onCancel: () -> Unit
 ) {
-    Column(
+    var currentStep by remember { mutableStateOf(1) } // 0: Demande envoyée, 1: Confirmé par le dépanneur...
+
+    val timelineSteps = listOf(
+        0 to "Demande envoyée",
+        1 to "Confirmé par le dépanneur",
+        2 to "Dépanneur en route",
+        3 to "Intervention terminée"
+    )
+
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .padding(16.dp),
+        shape = RoundedCornerShape(24.dp)
     ) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+        Column(modifier = Modifier.padding(16.dp).verticalScroll(rememberScrollState())) {
+            // Header
+            Text(
+                text = "Suivi de votre demande",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text(
+                text = "ID de la demande: #A4B7-89C1",
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Divider()
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Dépanneur info
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(
+                        BorderStroke(1.dp, MaterialTheme.colorScheme.primaryContainer),
+                        RoundedCornerShape(16.dp)
+                    )
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Avatar(
+                    name = requestDetails.serviceProvider.initials,
+                    modifier = Modifier.size(48.dp)
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(requestDetails.serviceProvider.name, fontWeight = FontWeight.Bold)
+                    Text("Arrivée estimée : 12 minutes", style = MaterialTheme.typography.bodySmall)
+                }
             }
-            Spacer(modifier = Modifier.width(8.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text("Confirmez votre demande", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text("Veuillez vérifier les informations avant d'envoyer.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Timeline
+            Column {
+                timelineSteps.forEach { (stepId, label) ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(24.dp)) {
+                            when {
+                                stepId < currentStep -> Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50))
+                                stepId == currentStep -> CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                                else -> Icon(Icons.Default.RadioButtonUnchecked, contentDescription = null, tint = Color.Gray)
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(label, fontWeight = FontWeight.SemiBold)
+                    }
+                    if (stepId < timelineSteps.last().first) {
+                        Box(modifier = Modifier.padding(start = 11.dp).width(2.dp).height(24.dp).background(Color.Gray))
+                    }
+                }
             }
-            IconButton(onClick = onClose) {
-                Icon(Icons.Default.Close, contentDescription = "Close")
+
+            Spacer(modifier = Modifier.height(24.dp))
+            Divider()
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Récapitulatif
+            Text("Récapitulatif de l'intervention", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(16.dp))
+            SummaryRow(icon = Icons.Default.DirectionsCar, label = "Votre véhicule", value = requestDetails.vehicleInfo)
+            SummaryRow(icon = Icons.Default.LocationOn, label = "Lieu", value = requestDetails.location ?: "Non spécifié")
+            SummaryRow(icon = Icons.Default.ReportProblem, label = "Problème signalé", value = requestDetails.problem)
+            if (requestDetails.description.isNotEmpty()) {
+                SummaryRow(icon = Icons.Default.Message, label = "Description", value = "\"${requestDetails.description}\"")
+            }
+            SummaryRow(icon = Icons.Default.CameraAlt, label = "Photo fournie", value = if (requestDetails.isPhotoAdded) "Oui" else "Non")
+
+            Spacer(modifier = Modifier.height(24.dp))
+            Divider()
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Footer buttons
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { /*TODO*/ }, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Default.Phone, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
+                    Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                    Text("Appeler le dépanneur")
+                }
+                Button(onClick = { /*TODO*/ }, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Default.Message, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
+                    Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                    Text("Envoyer un message")
+                }
+                Button(onClick = onCancel, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) {
+                    Text("Annuler la demande")
+                }
             }
         }
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Summary Box
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
-                .padding(16.dp)
-        ) {
-            Text("Récapitulatif", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
-
-            SummaryRow(icon = Icons.Default.Person, label = "Dépanneur", value = state.serviceProvider.name)
-            SummaryRow(icon = Icons.Default.ReportProblem, label = "Problème", value = state.problem)
-            SummaryRow(icon = Icons.Default.ReportProblem, label = "Chat", value = "\"${state.description}\"") // Using ReportProblem as placeholder for Chat
-
-            val currentDateTime = java.text.SimpleDateFormat("dd MMMM 'à' HH:mm", java.util.Locale.FRENCH).format(java.util.Date())
-            SummaryRow(icon = Icons.Default.Schedule, label = "Quand", value = currentDateTime)
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Confirm Button
-        Button(
-            onClick = onConfirm,
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-        ) {
-            Text("Confirmer et envoyer", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-        }
-        Spacer(modifier = Modifier.height(50.dp))
     }
 }
 
@@ -643,190 +677,6 @@ fun SummaryRow(icon: ImageVector, label: String, value: String) {
         Text(value, fontWeight = FontWeight.Bold, textAlign = TextAlign.End)
     }
 }
-
-@Composable
-fun ConfirmationDialogContent(
-    onConfirm: () -> Unit,
-    onCancel: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "Confirmation requise",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "Une fois votre demande envoyée, elle ne pourra plus être modifiée. Le déplacement d'un dépanneur requiert des moyens logistiques importants. Êtes-vous sûr de vouloir continuer ?",
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-        Button(
-            onClick = onConfirm,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-        ) {
-            Text("Envoyer ma demande", modifier = Modifier.padding(vertical = 8.dp))
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedButton(
-            onClick = onCancel,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Annuler", modifier = Modifier.padding(vertical = 8.dp))
-        }
-        Spacer(modifier = Modifier.height(50.dp))
-    }
-}
-
-@Composable
-fun SendingContent() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(500.dp)
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.size(144.dp)
-        ) {
-            val infiniteTransition = rememberInfiniteTransition(label = "sending_spinner")
-            val angle by infiniteTransition.animateFloat(
-                initialValue = 0f,
-                targetValue = 360f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(2000, easing = LinearEasing),
-                    repeatMode = RepeatMode.Restart
-                ),
-                label = "angle"
-            )
-
-            CircularProgressIndicator(
-                modifier = Modifier.size(112.dp),
-                strokeWidth = 4.dp
-            )
-            Text("N", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-        }
-        Spacer(modifier = Modifier.height(24.dp))
-        Text("Envoi de la demande...", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("Veuillez patienter.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
-@Composable
-fun SentContent() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(500.dp)
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            imageVector = Icons.Default.CheckCircle,
-            contentDescription = "Success",
-            tint = Color(0xFF4CAF50), // Green color
-            modifier = Modifier.size(64.dp)
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-        Text("Demande envoyée !", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("En attente de confirmation de la part de Garage Dubois.", color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
-    }
-}
-
-@Composable
-fun TrackingContent() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-    ) {
-        Text("Demande en cours", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Text("Suivez l'avancement de votre demande en temps réel.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Suivi de votre demande", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text("#A4B7-89C1", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("GD", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text("Garage Dubois", fontWeight = FontWeight.Bold)
-                        Text("En attente", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
-                    }
-                }
-                Divider(modifier = Modifier.padding(vertical = 16.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Arrivée estimée :", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("12 minutes", fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Column {
-                Text("Votre véhicule", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("Toyota Camry (ABC-1234)", fontWeight = FontWeight.Medium)
-            }
-            Column {
-                Text("Problème signalé", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("Moteur", fontWeight = FontWeight.Medium)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { /*TODO*/ }, modifier = Modifier.fillMaxWidth()) {
-                Text("Appeler le dépanneur")
-            }
-            OutlinedButton(onClick = { /*TODO*/ }, modifier = Modifier.fillMaxWidth()) {
-                Text("Envoyer un message")
-            }
-        }
-        Spacer(modifier = Modifier.height(50.dp))
-    }
-}
-
 
 sealed class SheetContentState {
     object Home : SheetContentState()
