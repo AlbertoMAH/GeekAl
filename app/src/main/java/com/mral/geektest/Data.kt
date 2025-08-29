@@ -3,7 +3,7 @@ package com.mral.geektest
 import androidx.compose.runtime.mutableStateListOf
 
 data class Restaurant(
-    val id: Int,
+    val id: Long,
     val name: String,
     val cuisine: String,
     val rating: Double,
@@ -12,10 +12,10 @@ data class Restaurant(
 )
 
 val sampleRestaurants = listOf(
-    Restaurant(1, "The Bistro", "Cuisine française", 4.5, "25 min", "https://placehold.co/80x80/d1a3e6/ffffff?text=B"),
-    Restaurant(2, "French Pâtisserie", "Boulangerie & Café", 4.8, "15 min", "https://placehold.co/80x80/e8b9f1/ffffff?text=P"),
-    Restaurant(3, "Le Jardin", "Cuisine française", 4.6, "20 min", "https://placehold.co/60x60/d1a3e6/ffffff?text=L"),
-    Restaurant(4, "La Trattoria", "Cuisine italienne", 4.7, "30 min", "https://placehold.co/60x60/d1a3e6/ffffff?text=L")
+    Restaurant(1L, "The Bistro", "Cuisine française", 4.5, "25 min", "https://placehold.co/80x80/d1a3e6/ffffff?text=B"),
+    Restaurant(2L, "French Pâtisserie", "Boulangerie & Café", 4.8, "15 min", "https://placehold.co/80x80/e8b9f1/ffffff?text=P"),
+    Restaurant(3L, "Le Jardin", "Cuisine française", 4.6, "20 min", "https://placehold.co/60x60/d1a3e6/ffffff?text=L"),
+    Restaurant(4L, "La Trattoria", "Cuisine italienne", 4.7, "30 min", "https://placehold.co/60x60/d1a3e6/ffffff?text=L")
 )
 
 data class MenuItem(
@@ -42,6 +42,6 @@ data class Reservation(
 )
 
 val sampleReservations = mutableStateListOf(
-    Reservation(1, "The Bistro", "Cuisine française", "2 personnes", "29 août 2025", "19:30", "confirmed"),
-    Reservation(2, "La Trattoria", "Cuisine italienne", "4 personnes", "28 août 2025", "20:00", "canceled")
+    Reservation(1L, "The Bistro", "Cuisine française", "2 personnes", "29 août 2025", "19:30", "confirmed"),
+    Reservation(2L, "La Trattoria", "Cuisine italienne", "4 personnes", "28 août 2025", "20:00", "canceled")
 )

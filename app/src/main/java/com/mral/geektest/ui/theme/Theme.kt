@@ -17,22 +17,22 @@ import androidx.core.view.WindowCompat
 
 import androidx.compose.ui.graphics.Color
 
-private val ModernColorScheme = lightColorScheme(
-    primary = BluePrimary,
-    secondary = GoldSecondary,
-    background = LightGrayBackground,
+private val PurpleThemeColorScheme = lightColorScheme(
+    primary = PurplePrimary,
+    secondary = PinkGradientStart,
+    background = LightPurpleBg,
     surface = Color.White,
     onPrimary = Color.White,
-    onSecondary = Color.Black,
-    onBackground = TextDarkGray,
-    onSurface = TextDarkGray,
+    onSecondary = TextPrimary,
+    onBackground = TextPrimary,
+    onSurface = TextPrimary,
 )
 
 @Composable
 fun MyComposeApplicationTheme(
     content: @Composable () -> Unit
 ) {
-    val colorScheme = ModernColorScheme
+    val colorScheme = PurpleThemeColorScheme
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
