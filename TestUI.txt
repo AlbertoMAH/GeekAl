@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Bistro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0e9f2;
+            color: #4a4a4a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 450px;
+            background-color: #fff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border-radius: 2rem;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .view {
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            padding-bottom: 60px; /* Espace pour la barre de navigation */
+        }
+        
+        .view.active {
+            display: flex;
+        }
+        
+        .header {
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .header h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        
+        .nav-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: linear-gradient(to right, #e8b9f1, #d1a3e6);
+            border-top-left-radius: 2rem;
+            border-top-right-radius: 2rem;
+            padding: 0.75rem;
+            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.75rem;
+            color: #fff;
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out;
+            position: relative; /* Nécessaire pour le positionnement du badge */
+        }
+
+        .nav-item:hover {
+            transform: scale(1.1);
+        }
+        
+        .content {
+            flex-grow: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .card {
+            background-color: #f9f9f9;
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .btn-primary {
+            background-color: #d1a3e6;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 1.5rem;
+            font-weight: 600;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(209, 163, 230, 0.4);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(209, 163, 230, 0.6);
+        }
+
+        .btn-secondary {
+            background-color: #f0e9f2;
+            color: #d1a3e6;
+            padding: 1rem 2rem;
+            border-radius: 1.5rem;
+            font-weight: 600;
+            text-align: center;
+            transition: background-color 0.2s ease-in-out;
+        }
+
+        .btn-secondary:hover {
+            background-color: #e8d0ee;
+        }
+        
+        .input-group {
+            margin-bottom: 1rem;
+        }
+
+        .input-group label {
+            font-weight: 500;
+            color: #7a7a7a;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 1rem;
+            border: 1px solid #e0e0e0;
+            background-color: #f5f5f5;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        
+        .input-group select {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%239a44c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1.5rem;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 20;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+            padding: 2rem;
+            border-radius: 2rem;
+        }
+        
+        .overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-confirmed {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-canceled {
+            background-color: #fde7e7;
+            color: #991b1b;
+        }
+
+        .filter-button {
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+        }
+
+        .filter-button.active {
+            background-color: #d1a3e6;
+            color: white;
+            box-shadow: 0 2px 5px rgba(209, 163, 230, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="app-container">
+
+        <!-- Vue Accueil -->
+        <div id="home-view" class="view active">
+            <div class="header">
+                <div class="w-8"></div>
+                <h1>Découvrir</h1>
+                <i class="fa-solid fa-bell text-xl"></i>
+            </div>
+            <div class="content">
+                <div class="relative mb-6">
+                    <input type="text" placeholder="Rechercher des restaurants" class="w-full pl-10 pr-4 py-3 rounded-full bg-gray-100 border-none focus:outline-none focus:ring-2 focus:ring-purple-300">
+                    <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                </div>
+                <h2 class="text-xl font-bold mb-4">Pour Vous</h2>
+                <div class="flex space-x-4 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
+                    <div class="flex-none w-80">
+                        <div class="card bg-purple-100 p-6">
+                            <div class="flex items-center space-x-4">
+                                <img src="https://placehold.co/80x80/d1a3e6/ffffff?text=B" alt="The Bistro" class="rounded-xl">
+                                <div>
+                                    <h3 class="font-bold text-lg">The Bistro</h3>
+                                    <p class="text-sm text-gray-600">Cuisine française</p>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center mt-4">
+                                <div class="flex items-center text-sm text-gray-600">
+                                    <i class="fa-solid fa-star text-yellow-400 mr-1"></i>
+                                    <span>4.5 &bull; 25 min</span>
+                                </div>
+                                <button onclick="showView('restaurant-view')" class="btn-primary py-2 px-4 text-sm">Réserver une table</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-none w-80">
+                        <div class="card p-6">
+                            <div class="flex items-center space-x-4">
+                                <img src="https://placehold.co/80x80/e8b9f1/ffffff?text=P" alt="French Patisserie" class="rounded-xl">
+                                <div>
+                                    <h3 class="font-bold text-lg">French Pâtisserie</h3>
+                                    <p class="text-sm text-gray-600">Boulangerie & Café</p>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center mt-4">
+                                <div class="flex items-center text-sm text-gray-600">
+                                    <i class="fa-solid fa-star text-yellow-400 mr-1"></i>
+                                    <span>4.8 &bull; 15 min</span>
+                                </div>
+                                <button onclick="showView('restaurant-view')" class="btn-primary py-2 px-4 text-sm">Réserver une table</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Ajouter d'autres éléments ici -->
+                </div>
+                <h2 class="text-xl font-bold mb-4">Restaurants à proximité</h2>
+                <div class="space-y-4">
+                    <div class="card p-4 flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <img src="https://placehold.co/60x60/d1a3e6/ffffff?text=L" alt="Le Jardin" class="rounded-lg">
+                            <div>
+                                <h3 class="font-bold">Le Jardin</h3>
+                                <p class="text-xs text-gray-500">Cuisine française</p>
+                            </div>
+                        </div>
+                        <button onclick="showView('restaurant-view')" class="btn-primary py-2 px-4 text-sm">Réserver une table</button>
+                    </div>
+                    <div class="card p-4 flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <img src="https://placehold.co/60x60/d1a3e6/ffffff?text=L" alt="La Trattoria" class="rounded-lg">
+                            <div>
+                                <h3 class="font-bold">La Trattoria</h3>
+                                <p class="text-xs text-gray-500">Cuisine italienne</p>
+                            </div>
+                        </div>
+                        <button onclick="showView('restaurant-view')" class="btn-primary py-2 px-4 text-sm">Réserver une table</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vue Restaurant -->
+        <div id="restaurant-view" class="view">
+            <div class="relative">
+                <img src="https://placehold.co/450x200/d1a3e6/ffffff?text=The+Bistro" alt="Image du restaurant" class="w-full">
+                <button onclick="showView('home-view')" class="absolute top-4 left-4 text-white text-2xl drop-shadow-lg"><i class="fa-solid fa-arrow-left"></i></button>
+            </div>
+            <div class="content bg-white -mt-8 rounded-t-3xl relative z-10">
+                <h1 class="text-2xl font-bold">The Bistro</h1>
+                <p class="text-gray-500 mb-4">Cuisine française</p>
+                <div class="flex space-x-2 border-b border-gray-200 mb-4">
+                    <button onclick="showTab(this, 'book-tab')" class="tab-button py-2 px-4 text-sm font-medium border-b-2 border-purple-500 text-purple-500">Réserver</button>
+                    <button onclick="showTab(this, 'menu-tab')" class="tab-button py-2 px-4 text-sm font-medium text-gray-500 border-b-2 border-transparent">Menu</button>
+                    <button onclick="showTab(this, 'description-tab')" class="tab-button py-2 px-4 text-sm font-medium text-gray-500 border-b-2 border-transparent">Description</button>
+                </div>
+
+                <!-- Contenu de l'onglet Réserver -->
+                <div id="book-tab" class="tab active">
+                    <div class="card">
+                        <h2 class="text-lg font-semibold mb-4">Détails de la réservation</h2>
+                        <div class="input-group">
+                            <label for="party-size-selector">Nombre de personnes</label>
+                            <div class="relative">
+                                <select id="party-size-selector" class="w-full py-3 px-4 rounded-xl border-none bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-300">
+                                    <option value="" disabled selected hidden>Sélectionner...</option>
+                                    <option value="1">1 personne</option>
+                                    <option value="2">2 personnes</option>
+                                    <option value="3">3 personnes</option>
+                                    <option value="4">4 personnes</option>
+                                    <option value="5">5 personnes</option>
+                                    <option value="6">6 personnes</option>
+                                    <option value="7">7 personnes</option>
+                                    <option value="8">8 personnes</option>
+                                    <option value="9">9 personnes</option>
+                                    <option value="10">10 personnes</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex space-x-4">
+                            <div class="input-group flex-1">
+                                <label for="date-picker">Date</label>
+                                <input type="date" id="date-picker" class="w-full py-3 px-4 rounded-xl border-none bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-300">
+                            </div>
+                            <div class="input-group flex-1">
+                                <label for="time-picker">Heure</label>
+                                <input type="time" id="time-picker" class="w-full py-3 px-4 rounded-xl border-none bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-300">
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="bookTable()" class="btn-primary w-full mt-4">Réserver</button>
+                </div>
+                
+                <!-- Contenu de l'onglet Menu -->
+                <div id="menu-tab" class="tab hidden">
+                    <div class="card">
+                        <h2 class="text-lg font-semibold mb-4">Menu du Chef</h2>
+                        <h3 class="text-md font-medium mb-2">Entrées</h3>
+                        <div class="flex items-center space-x-4 mb-4">
+                            <img src="https://placehold.co/80x80/d1a3e6/ffffff?text=S" alt="Soupe à l'oignon" class="rounded-lg">
+                            <div>
+                                <p class="font-bold">Soupe à l'oignon</p>
+                                <p class="text-sm text-gray-500">Soupe à l'oignon gratinée traditionnelle.</p>
+                                <p class="text-sm font-semibold mt-1">12€</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-4 mb-4">
+                            <img src="https://placehold.co/80x80/d1a3e6/ffffff?text=S" alt="Salade Niçoise" class="rounded-lg">
+                            <div>
+                                <p class="font-bold">Salade Niçoise</p>
+                                <p class="text-sm text-gray-500">Thon, pommes de terre, œufs et haricots verts.</p>
+                                <p class="text-sm font-semibold mt-1">15€</p>
+                            </div>
+                        </div>
+                        <h3 class="text-md font-medium mb-2">Plats principaux</h3>
+                        <div class="flex items-center space-x-4 mb-4">
+                            <img src="https://placehold.co/80x80/d1a3e6/ffffff?text=C" alt="Coq au vin" class="rounded-lg">
+                            <div>
+                                <p class="font-bold">Coq au vin</p>
+                                <p class="text-sm text-gray-500">Poulet braisé au vin, champignons et ail.</p>
+                                <p class="text-sm font-semibold mt-1">24€</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contenu de l'onglet Description -->
+                <div id="description-tab" class="tab hidden">
+                    <div class="card">
+                        <h2 class="text-lg font-semibold mb-4">Cuisine française</h2>
+                        <p class="text-sm text-gray-600 mb-4">Bienvenue à The Bistro, un charmant restaurant offrant le meilleur de la cuisine française. Notre ambiance chaleureuse et notre décor élégant en font l'endroit idéal pour une soirée mémorable.</p>
+                        <h3 class="text-md font-medium mb-2">Horaires d'ouverture</h3>
+                        <p class="text-sm text-gray-600">Lundi - Vendredi: 12:00 - 22:00</p>
+                        <p class="text-sm text-gray-600">Samedi: 12:00 - 23:00</p>
+                        <p class="text-sm text-gray-600">Dimanche: Fermé</p>
+                        <h3 class="text-md font-medium mt-4 mb-2">Contact & Localisation</h3>
+                        <p class="text-sm text-gray-600">123 Example Street, City, State 12345</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Overlays -->
+        
+        <!-- Overlay de vérification de la disponibilité -->
+        <div id="checking-availability-overlay" class="overlay">
+            <i class="fa-solid fa-sync fa-spin text-5xl text-purple-500 mb-4"></i>
+            <h2 class="text-xl font-bold mb-2">Vérification de la disponibilité</h2>
+            <p class="text-sm text-gray-600">Vérification de la disponibilité chez The Bistro... Veuillez patienter un instant.</p>
+        </div>
+
+        <!-- Overlay de disponibilité confirmée -->
+        <div id="availability-confirmed-overlay" class="overlay">
+            <i class="fa-solid fa-circle-check text-5xl text-green-500 mb-4"></i>
+            <h2 class="text-xl font-bold mb-2">Disponibilité confirmée!</h2>
+            <p class="text-sm text-gray-600 mb-6">Nous avons trouvé 2 tables pour vous chez The Bistro. Êtes-vous toujours intéressé pour réserver?</p>
+            <div class="flex space-x-4 w-full">
+                <button onclick="showOverlay('confirmation-overlay')" class="btn-primary flex-1">Continuer</button>
+                <button onclick="hideOverlay('availability-confirmed-overlay')" class="btn-secondary flex-1">Annuler</button>
+            </div>
+        </div>
+
+        <!-- Overlay de confirmation -->
+        <div id="confirmation-overlay" class="overlay">
+            <i class="fa-solid fa-sync fa-spin text-5xl text-purple-500 mb-4"></i>
+            <h2 class="text-xl font-bold mb-2">Confirmation</h2>
+            <p class="text-sm text-gray-600">Confirmation en cours auprès de The Bistro... Merci de patienter un instant.</p>
+        </div>
+        
+        <!-- Overlay de réservation confirmée -->
+        <div id="booking-confirmed-overlay" class="overlay">
+            <i class="fa-solid fa-circle-check text-5xl text-green-500 mb-4"></i>
+            <h2 class="text-xl font-bold mb-2">Votre table est réservée !</h2>
+            <!-- Les détails de la réservation seront affichés dynamiquement ici -->
+            <p class="text-sm text-gray-600 mb-6">The Bistro<br><span id="confirmed-date"></span><br><span id="confirmed-party-size"></span></p>
+            <div class="flex space-x-4 w-full">
+                <button onclick="addConfirmedReservation(); showReservationDetails(); hideAllOverlays();" class="btn-primary flex-1">Voir la réservation</button>
+                <button onclick="addConfirmedReservation(); showView('home-view'); hideAllOverlays();" class="btn-secondary flex-1">Fait</button>
+            </div>
+        </div>
+
+        <!-- Vue des détails de la réservation -->
+        <div id="reservation-details-view" class="view">
+            <div class="relative">
+                <img src="https://placehold.co/450x200/d1a3e6/ffffff?text=The+Bistro" alt="Image du restaurant" class="w-full">
+                <button onclick="showView('home-view')" class="absolute top-4 left-4 text-white text-2xl drop-shadow-lg"><i class="fa-solid fa-arrow-left"></i></button>
+            </div>
+            <div class="content bg-white -mt-8 rounded-t-3xl relative z-10">
+                <h1 class="text-2xl font-bold">The Bistro</h1>
+                <p class="text-gray-500 mb-4">Cuisine française</p>
+
+                <!-- Détails de la réservation dynamiques -->
+                <div class="space-y-4 text-sm text-gray-700">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-regular fa-calendar-alt w-5 text-purple-500"></i>
+                        <span id="details-date"></span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-regular fa-clock w-5 text-purple-500"></i>
+                        <span id="details-time"></span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-users w-5 text-purple-500"></i>
+                        <span id="details-party-size"></span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-map-marker-alt w-5 text-purple-500"></i>
+                        <span>123 Example Street, City, State 12345</span>
+                    </div>
+                </div>
+
+                <div class="mt-8 card flex flex-col items-center p-6">
+                    <img src="https://placehold.co/150x150/d1a3e6/ffffff?text=QR+Code" alt="QR Code" class="mb-4 rounded-lg">
+                    <p class="text-sm text-gray-500">Montrez ce QR code au restaurant</p>
+                </div>
+                
+                <div class="flex flex-col space-y-4 mt-6">
+                    <button onclick="confirmCancelBooking()" class="btn-secondary w-full text-red-500 hover:bg-red-100">Annuler la réservation</button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Vue de la liste des réservations -->
+        <div id="reservation-view" class="view">
+            <div class="header">
+                <div class="w-8"></div>
+                <h1>Vos réservations</h1>
+                <div class="w-8"></div>
+            </div>
+            <div class="content">
+                <!-- Boutons de filtre -->
+                <div class="flex justify-center space-x-4 mb-4">
+                    <button class="filter-button active" onclick="filterReservations('all')">Tout</button>
+                    <button class="filter-button" onclick="filterReservations('confirmed')">Confirmées</button>
+                    <button class="filter-button" onclick="filterReservations('canceled')">Annulées</button>
+                </div>
+                <!-- Conteneur de la liste des réservations -->
+                <div id="reservation-list-container" class="space-y-4">
+                    <!-- Les réservations seront ajoutées dynamiquement ici -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Overlay de suppression de la réservation -->
+        <div id="delete-reservation-overlay" class="overlay">
+            <i class="fa-solid fa-trash-can text-5xl text-red-500 mb-4"></i>
+            <h2 class="text-xl font-bold mb-2">Supprimer la réservation?</h2>
+            <p class="text-sm text-gray-600 mb-6">Êtes-vous sûr de vouloir supprimer cette réservation de la liste ?</p>
+            <div class="flex space-x-4 w-full">
+                <button onclick="hideOverlay('delete-reservation-overlay')" class="btn-secondary flex-1">Annuler</button>
+                <button id="confirm-delete-button" class="btn-primary flex-1 bg-red-500 hover:bg-red-600">Supprimer</button>
+            </div>
+        </div>
+
+        <!-- Overlay d'annulation de la réservation -->
+        <div id="cancel-booking-overlay" class="overlay">
+            <i class="fa-solid fa-ban text-5xl text-red-500 mb-4"></i>
+            <h2 class="text-xl font-bold mb-2">Annuler la réservation?</h2>
+            <p class="text-sm text-gray-600 mb-6">Êtes-vous sûr de vouloir annuler cette réservation?</p>
+            <div class="flex space-x-4 w-full">
+                <button onclick="hideOverlay('cancel-booking-overlay')" class="btn-secondary flex-1">Non</button>
+                <button onclick="cancelBooking()" class="btn-primary flex-1 bg-red-500 hover:bg-red-600">Oui</button>
+            </div>
+        </div>
+
+        <!-- Overlay de boîte de message personnalisée -->
+        <div id="custom-message-overlay" class="overlay">
+            <div class="card p-6 w-full max-w-sm">
+                <h2 id="custom-message-title" class="text-xl font-bold mb-2"></h2>
+                <p id="custom-message-text" class="text-sm text-gray-600 mb-6"></p>
+                <button onclick="hideOverlay('custom-message-overlay')" class="btn-primary w-full">OK</button>
+            </div>
+        </div>
+        
+        <!-- Barre de navigation inférieure -->
+        <div class="nav-bar">
+            <div id="home-nav" onclick="showView('home-view')" class="nav-item">
+                <i class="fa-solid fa-home text-xl mb-1"></i>
+                <span>Accueil</span>
+            </div>
+            <div id="reservations-nav" onclick="showReservations()" class="nav-item">
+                <i class="fa-solid fa-bookmark text-xl mb-1"></i>
+                <span>Réservations</span>
+                <span id="reservation-badge" class="absolute top-1 right-1 w-2 h-2 rounded-full hidden"></span>
+            </div>
+            <div id="profile-nav" class="nav-item">
+                <i class="fa-solid fa-user text-xl mb-1"></i>
+                <span>Profil</span>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Objet global pour stocker les détails de la réservation actuelle avant confirmation
+        let currentReservation = {};
+
+        const overlays = ['checking-availability-overlay', 'availability-confirmed-overlay', 'confirmation-overlay', 'booking-confirmed-overlay', 'delete-reservation-overlay', 'cancel-booking-overlay', 'custom-message-overlay'];
+
+        let reservations = [
+            // Exemple de réservation confirmée
+            {
+                id: 1,
+                restaurantName: 'The Bistro',
+                cuisine: 'Cuisine française',
+                partySize: '2 personnes',
+                date: '29 août 2025',
+                time: '19:30',
+                status: 'confirmed'
+            },
+            // Exemple de réservation annulée
+            {
+                id: 2,
+                restaurantName: 'La Trattoria',
+                cuisine: 'Cuisine italienne',
+                partySize: '4 personnes',
+                date: '28 août 2025',
+                time: '20:00',
+                status: 'canceled'
+            }
+        ];
+
+        let currentFilter = 'all';
+
+        /**
+         * Valide le formulaire et lance le processus de réservation.
+         */
+        window.bookTable = () => {
+            const dateInput = document.getElementById('date-picker');
+            const timeInput = document.getElementById('time-picker');
+            const partySizeSelector = document.getElementById('party-size-selector');
+
+            // Vérifie si tous les champs sont remplis
+            if (!partySizeSelector.value || !dateInput.value || !timeInput.value) {
+                showCustomMessage('Veuillez sélectionner le nombre de personnes, une date et une heure.', 'error');
+                return;
+            }
+
+            // Stocke les détails sélectionnés
+            currentReservation.partySize = partySizeSelector.value;
+            currentReservation.date = dateInput.value;
+            currentReservation.time = timeInput.value;
+
+            // Lance le flux de travail de réservation simulé
+            showOverlay('checking-availability-overlay');
+        };
+
+
+        /**
+         * Ajoute une nouvelle réservation confirmée à la liste des réservations en utilisant des données dynamiques.
+         */
+        window.addConfirmedReservation = () => {
+             const newReservation = {
+                 id: Date.now(),
+                 restaurantName: 'The Bistro',
+                 cuisine: 'Cuisine française',
+                 partySize: currentReservation.partySize > 1 ? `${currentReservation.partySize} personnes` : '1 personne',
+                 date: formatDate(currentReservation.date),
+                 time: currentReservation.time,
+                 status: 'confirmed'
+             };
+             reservations.push(newReservation);
+             updateReservationBadge();
+        };
+
+        /**
+         * Met à jour la visibilité du badge de réservation en fonction des réservations confirmées.
+         */
+        const updateReservationBadge = () => {
+            const badge = document.getElementById('reservation-badge');
+            const hasConfirmed = reservations.some(res => res.status === 'confirmed');
+            if (hasConfirmed) {
+                badge.classList.remove('hidden');
+                badge.classList.add('bg-green-500');
+            } else {
+                badge.classList.add('hidden');
+            }
+        };
+
+        /**
+         * Affiche la vue de la liste des réservations et filtre les réservations.
+         */
+        window.showReservations = () => {
+            filterReservations(currentFilter);
+            showView('reservation-view');
+        };
+
+        /**
+         * Filtre et rend la liste des réservations.
+         * @param {string} filter Le filtre à appliquer ('all', 'confirmed', 'canceled').
+         */
+        window.filterReservations = (filter) => {
+            currentFilter = filter;
+            const container = document.getElementById('reservation-list-container');
+            container.innerHTML = '';
+            
+            document.querySelectorAll('.filter-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`.filter-button[onclick="filterReservations('${filter}')"]`).classList.add('active');
+
+            let filteredReservations = reservations;
+            if (filter !== 'all') {
+                filteredReservations = reservations.filter(res => res.status === filter);
+            }
+
+            if (filteredReservations.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <i class="fa-solid fa-calendar-xmark text-6xl text-gray-300 mb-4"></i>
+                        <p class="text-xl text-gray-500 font-bold">Aucune réservation.</p>
+                        <p class="text-sm text-gray-400 mt-2">Aucune réservation ${filter === 'confirmed' ? 'confirmée' : 'annulée'}.</p>
+                    </div>
+                `;
+            } else {
+                filteredReservations.forEach(res => {
+                    const badgeClass = res.status === 'confirmed' ? 'badge-confirmed' : 'badge-canceled';
+                    const badgeText = res.status === 'confirmed' ? 'Confirmée' : 'Annulée';
+                    
+                    const cardHtml = `
+                        <div class="card flex items-center justify-between">
+                            <div class="flex items-center space-x-4">
+                                <img src="https://placehold.co/80x80/d1a3e6/ffffff?text=${res.restaurantName.charAt(0)}" alt="${res.restaurantName}" class="rounded-xl">
+                                <div class="flex-1">
+                                    <h3 class="font-bold text-lg">${res.restaurantName}</h3>
+                                    <p class="text-sm text-gray-600">${res.cuisine}</p>
+                                    <span class="badge ${badgeClass} mt-2">${badgeText}</span>
+                                </div>
+                            </div>
+                            <button class="text-red-500 text-lg p-2 rounded-full hover:bg-red-100 transition-colors" onclick="confirmDelete(${res.id})">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    `;
+                    container.innerHTML += cardHtml;
+                });
+            }
+        };
+
+        /**
+         * Affiche l'overlay de confirmation pour la suppression d'une réservation.
+         * @param {number} reservationId L'ID de la réservation à supprimer.
+         */
+        window.confirmDelete = (reservationId) => {
+            const confirmBtn = document.getElementById('confirm-delete-button');
+            confirmBtn.onclick = () => deleteReservation(reservationId);
+            showOverlay('delete-reservation-overlay');
+        };
+
+        /**
+         * Supprime une réservation de la liste.
+         * @param {number} id L'ID de la réservation à supprimer.
+         */
+        const deleteReservation = (id) => {
+            reservations = reservations.filter(res => res.id !== id);
+            hideOverlay('delete-reservation-overlay');
+            showReservations(); // Rafraîchit la liste
+            updateReservationBadge();
+        };
+
+        /**
+         * Affiche l'overlay de confirmation pour l'annulation d'une réservation.
+         */
+        window.confirmCancelBooking = () => {
+            // Suppose que la dernière réservation ajoutée est celle à annuler pour cette démo
+            window.reservationToCancelId = reservations[reservations.length - 1].id;
+            showOverlay('cancel-booking-overlay');
+        };
+
+        /**
+         * Annule une réservation en changeant son statut en 'canceled'.
+         */
+        window.cancelBooking = () => {
+            const idToCancel = window.reservationToCancelId;
+            const reservationIndex = reservations.findIndex(res => res.id === idToCancel);
+            if (reservationIndex > -1) {
+                reservations[reservationIndex].status = 'canceled';
+            }
+            hideOverlay('cancel-booking-overlay');
+            showReservations();
+            updateReservationBadge();
+        };
+
+        /**
+         * Affiche la vue des détails de la réservation et la remplit avec des données dynamiques.
+         */
+        window.showReservationDetails = () => {
+            // Utilise les données de l'objet currentReservation
+            document.getElementById('details-date').textContent = formatDate(currentReservation.date);
+            document.getElementById('details-time').textContent = currentReservation.time;
+            document.getElementById('details-party-size').textContent = currentReservation.partySize > 1 ? `${currentReservation.partySize} personnes` : '1 personne';
+            
+            showView('reservation-details-view');
+        };
+
+        /**
+         * Formate une chaîne de date dans un format convivial (par exemple, "vendredi 29 août 2025").
+         * @param {string} dateString La date au format "YYYY-MM-DD".
+         * @returns {string} La chaîne de date formatée.
+         */
+        const formatDate = (dateString) => {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const date = new Date(dateString.replace(/-/g, '/')); // Correction pour Safari
+            return date.toLocaleDateString('fr-FR', options);
+        };
+
+        /**
+         * Affiche une vue spécifique et masque toutes les autres.
+         * @param {string} viewId L'ID de la vue à afficher.
+         */
+        window.showView = (viewId) => {
+            document.querySelectorAll('.view').forEach(view => {
+                view.classList.remove('active');
+            });
+            document.getElementById(viewId).classList.add('active');
+            setActiveNav(viewId.replace('-view', '-nav'));
+            // Cache tous les overlays actifs lors du changement de vue
+            window.hideAllOverlays();
+        };
+        
+        /**
+         * Affiche le contenu d'un onglet spécifique et met à jour les styles des boutons d'onglet.
+         * @param {HTMLElement} element Le bouton d'onglet sur lequel on a cliqué.
+         * @param {string} tabId L'ID du contenu de l'onglet à afficher.
+         */
+        window.showTab = (element, tabId) => {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            document.getElementById(tabId).classList.remove('hidden');
+            
+            // Met à jour les styles des boutons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('border-purple-500', 'text-purple-500');
+                button.classList.add('border-transparent', 'text-gray-500');
+            });
+            element.classList.add('border-purple-500', 'text-purple-500');
+            element.classList.remove('border-transparent', 'text-gray-500');
+        };
+
+        /**
+         * Affiche un overlay spécifique et déclenche les actions temporisées.
+         * @param {string} overlayId L'ID de l'overlay à afficher.
+         */
+        window.showOverlay = (overlayId) => {
+            document.getElementById(overlayId).classList.add('active');
+            
+            // Simule le flux de travail
+            if (overlayId === 'checking-availability-overlay') {
+                setTimeout(() => {
+                    window.hideOverlay('checking-availability-overlay');
+                    window.showOverlay('availability-confirmed-overlay');
+                }, 2000);
+            } else if (overlayId === 'confirmation-overlay') {
+                 setTimeout(() => {
+                    window.hideOverlay('confirmation-overlay');
+                    // Remplit l'overlay de confirmation avec des données dynamiques avant de l'afficher
+                    document.getElementById('confirmed-date').textContent = formatDate(currentReservation.date) + ' à ' + currentReservation.time;
+                    document.getElementById('confirmed-party-size').textContent = currentReservation.partySize > 1 ? `Groupe de ${currentReservation.partySize}` : `Groupe d'une personne`;
+                    window.showOverlay('booking-confirmed-overlay');
+                }, 2000);
+            }
+        };
+
+        /**
+         * Cache un overlay spécifique.
+         * @param {string} overlayId L'ID de l'overlay à cacher.
+         */
+        window.hideOverlay = (overlayId) => {
+             document.getElementById(overlayId).classList.remove('active');
+        };
+
+        /**
+         * Cache tous les overlays actifs.
+         */
+        window.hideAllOverlays = () => {
+            overlays.forEach(overlayId => {
+                window.hideOverlay(overlayId);
+            });
+        };
+
+        /**
+         * Affiche un message personnalisé dans un overlay au lieu d'utiliser alert().
+         * @param {string} message Le message à afficher.
+         * @param {string} type Le type de message ('info' ou 'error').
+         */
+        window.showCustomMessage = (message, type) => {
+            const overlay = document.getElementById('custom-message-overlay');
+            const title = document.getElementById('custom-message-title');
+            const text = document.getElementById('custom-message-text');
+
+            if (type === 'error') {
+                title.textContent = 'Erreur';
+                title.classList.add('text-red-500');
+            } else {
+                title.textContent = 'Notification';
+                title.classList.remove('text-red-500');
+            }
+            text.textContent = message;
+            overlay.classList.add('active');
+        };
+
+        /**
+         * Définit le style de l'élément de navigation actif.
+         * @param {string} navId L'ID de l'élément de navigation à définir comme actif.
+         */
+        const setActiveNav = (navId) => {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('text-white');
+                item.style.color = '#fff';
+            });
+            const activeNav = document.getElementById(navId);
+            if (activeNav) {
+                activeNav.style.color = '#fff';
+            }
+        };
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // Configuration initiale de la vue
+            window.showView('home-view');
+            setActiveNav('home-nav');
+            updateReservationBadge();
+        });
+    </script>
+</body>
+</html>
