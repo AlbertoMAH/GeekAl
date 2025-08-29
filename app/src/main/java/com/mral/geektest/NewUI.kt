@@ -7,6 +7,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -28,6 +34,9 @@ import androidx.navigation.compose.*
 import coil.compose.rememberAsyncImagePainter
 import com.mral.geektest.ui.theme.GreenConfirmedText
 import com.mral.geektest.ui.theme.StarYellow
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -269,8 +278,12 @@ fun HomeScreen(onRestaurantClick: (Restaurant) -> Unit) {
         Text("Pour Vous", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(16.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            items(sampleRestaurants.take(2)) { restaurant ->
-                RestaurantCard(restaurant, onRestaurantClick = onRestaurantClick)
+            itemsIndexed(sampleRestaurants.take(2)) { index, restaurant ->
+                RestaurantCard(
+                    restaurant = restaurant,
+                    onRestaurantClick = onRestaurantClick,
+                    isSpecial = index == 0
+                )
             }
         }
         Spacer(modifier = Modifier.height(24.dp))
@@ -410,6 +423,28 @@ fun FilterButton(text: String, isSelected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
+fun StatusBadge(status: String) {
+    val (backgroundColor, textColor, text) = when (status) {
+        "confirmed" -> Triple(Color(0xFFDCFCE7), Color(0xFF166534), "Confirmée")
+        "canceled" -> Triple(Color(0xFFFDE7E7), Color(0xFF991B1B), "Annulée")
+        else -> Triple(Color.LightGray, Color.Black, status)
+    }
+
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = backgroundColor,
+    ) {
+        Text(
+            text = text,
+            color = textColor,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 12.sp,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        )
+    }
+}
+
+@Composable
 fun ReservationCard(reservation: Reservation, onClick: () -> Unit, onDelete: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
@@ -427,12 +462,7 @@ fun ReservationCard(reservation: Reservation, onClick: () -> Unit, onDelete: () 
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text("${reservation.partySize} • ${reservation.date} à ${reservation.time}", fontSize = 14.sp)
-                    Text(
-                        text = reservation.status.replaceFirstChar { it.uppercase() },
-                        color = if (reservation.status == "confirmed") GreenConfirmedText else Color.Gray,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
-                    )
+                    StatusBadge(status = reservation.status)
                 }
             }
             IconButton(onClick = onDelete) {
@@ -450,12 +480,14 @@ fun ProfileScreen() {
 }
 
 @Composable
-fun RestaurantCard(restaurant: Restaurant, onRestaurantClick: (Restaurant) -> Unit) {
+fun RestaurantCard(restaurant: Restaurant, onRestaurantClick: (Restaurant) -> Unit, isSpecial: Boolean = false) {
     Card(
         modifier = Modifier.width(300.dp).clickable { onRestaurantClick(restaurant) },
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSpecial) Color(0xFFF0E9F2) else MaterialTheme.colorScheme.surface
+        )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -570,14 +602,100 @@ fun RestaurantDetailsScreen(restaurant: Restaurant, onBack: () -> Unit, onBook: 
     }
 }
 
+@Composable
+fun TimePickerDialog(
+    title: String = "Select Time",
+    onDismissRequest: () -> Unit,
+    confirmButton: @Composable () -> Unit,
+    dismissButton: @Composable () -> Unit,
+    containerColor: Color = MaterialTheme.colorScheme.surface,
+    content: @Composable () -> Unit,
+) {
+    Dialog(onDismissRequest = onDismissRequest) {
+        Surface(
+            shape = RoundedCornerShape(28.dp),
+            color = containerColor,
+            tonalElevation = 6.dp,
+            modifier = Modifier.width(IntrinsicSize.Min)
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp)
+                )
+                content()
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    dismissButton()
+                    Spacer(modifier = Modifier.width(8.dp))
+                    confirmButton()
+                }
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookingForm(onBook: () -> Unit) {
     var partySize by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf("") }
-    var time by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
     val partySizeOptions = (1..10).map { "$it personne${if (it > 1) "s" else ""}" }
+
+    // Date picker state
+    var date by remember { mutableStateOf("") }
+    val datePickerState = rememberDatePickerState()
+    var showDatePicker by remember { mutableStateOf(false) }
+
+    // Time picker state
+    var time by remember { mutableStateOf("") }
+    val timePickerState = rememberTimePickerState(is24Hour = true)
+    var showTimePicker by remember { mutableStateOf(false) }
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let {
+                            val formatter = SimpleDateFormat("dd MMMM yyyy", Locale.FRENCH)
+                            date = formatter.format(Date(it))
+                        }
+                        showDatePicker = false
+                    }
+                ) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Annuler") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    if (showTimePicker) {
+        TimePickerDialog(
+            onDismissRequest = { showTimePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        time = String.format("%02d:%02d", timePickerState.hour, timePickerState.minute)
+                        showTimePicker = false
+                    }
+                ) { Text("OK") }
+            },
+            dismissButton = { TextButton(onClick = { showTimePicker = false }) { Text("Annuler") } }
+        ) {
+            TimePicker(state = timePickerState)
+        }
+    }
 
     Column(modifier = Modifier.padding(16.dp)) {
         Text("Détails de la réservation", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
@@ -620,9 +738,12 @@ fun BookingForm(onBook: () -> Unit) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             OutlinedTextField(
                 value = date,
-                onValueChange = { date = it },
+                onValueChange = { },
                 label = { Text("Date") },
-                modifier = Modifier.weight(1f),
+                readOnly = true,
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { showDatePicker = true },
                 shape = RoundedCornerShape(8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedBorderColor = Color.Transparent,
@@ -633,9 +754,12 @@ fun BookingForm(onBook: () -> Unit) {
             )
             OutlinedTextField(
                 value = time,
-                onValueChange = { time = it },
+                onValueChange = { },
                 label = { Text("Heure") },
-                modifier = Modifier.weight(1f),
+                readOnly = true,
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { showTimePicker = true },
                 shape = RoundedCornerShape(8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedBorderColor = Color.Transparent,
