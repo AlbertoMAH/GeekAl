@@ -21,7 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
@@ -56,7 +55,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -64,12 +62,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import coil.compose.rememberAsyncImagePainter
-import com.mral.geektest.ui.theme.CanceledRed
+import com.mral.geektest.ui.theme.BluePrimary
+import com.mral.geektest.ui.theme.GoldSecondary
 import com.mral.geektest.ui.theme.ConfirmedGreen
-import com.mral.geektest.ui.theme.InputGray
-import com.mral.geektest.ui.theme.PurpleLight
-import com.mral.geektest.ui.theme.PurplePrimary
-import com.mral.geektest.ui.theme.PurpleSecondary
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -146,38 +141,23 @@ fun NewMainScreen() {
 @Composable
 fun AppBottomNavBar(currentScreen: Screen, onScreenSelected: (Screen) -> Unit) {
     NavigationBar(
-        modifier = Modifier.clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)),
-        containerColor = Color.Transparent
+        containerColor = Color.White,
+        tonalElevation = 8.dp
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(PurpleSecondary, PurplePrimary)
-                    )
+        Screen.values().forEach { screen ->
+            NavigationBarItem(
+                icon = { Icon(screen.icon, contentDescription = screen.label) },
+                label = { Text(screen.label, fontSize = 12.sp) },
+                selected = currentScreen == screen,
+                onClick = { onScreenSelected(screen) },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = BluePrimary,
+                    unselectedIconColor = Color.Gray,
+                    selectedTextColor = BluePrimary,
+                    unselectedTextColor = Color.Gray,
+                    indicatorColor = BluePrimary.copy(alpha = 0.1f)
                 )
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(8.dp),
-                horizontalArrangement = Arrangement.SpaceAround
-            ) {
-                Screen.values().forEach { screen ->
-                    NavigationBarItem(
-                        icon = { Icon(screen.icon, contentDescription = screen.label) },
-                        label = { Text(screen.label, fontSize = 12.sp) },
-                        selected = currentScreen == screen,
-                        onClick = { onScreenSelected(screen) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = Color.White,
-                            unselectedIconColor = Color.White.copy(alpha = 0.7f),
-                            selectedTextColor = Color.White,
-                            unselectedTextColor = Color.White.copy(alpha = 0.7f),
-                            indicatorColor = Color.White.copy(alpha = 0.2f)
-                        )
-                    )
-                }
-            }
+            )
         }
     }
 }
@@ -191,7 +171,7 @@ fun HomeScreen(onRestaurantClick: (Restaurant) -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Découvrir", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text("Découvrir", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
             Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = Color.Gray)
         }
         Spacer(modifier = Modifier.height(16.dp))
@@ -201,16 +181,16 @@ fun HomeScreen(onRestaurantClick: (Restaurant) -> Unit) {
             placeholder = { Text("Rechercher des restaurants") },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(50),
+            shape = RoundedCornerShape(16.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 unfocusedBorderColor = Color.Transparent,
-                focusedBorderColor = PurplePrimary,
-                unfocusedContainerColor = InputGray,
-                focusedContainerColor = InputGray
+                focusedBorderColor = BluePrimary,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedContainerColor = MaterialTheme.colorScheme.surface
             )
         )
         Spacer(modifier = Modifier.height(24.dp))
-        Text("Pour Vous", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Text("Pour Vous", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(16.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             items(sampleRestaurants.take(2)) { restaurant ->
@@ -218,7 +198,7 @@ fun HomeScreen(onRestaurantClick: (Restaurant) -> Unit) {
             }
         }
         Spacer(modifier = Modifier.height(24.dp))
-        Text("Restaurants à proximité", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Text("Restaurants à proximité", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(16.dp))
         LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             items(sampleRestaurants.drop(2)) { restaurant ->
@@ -230,111 +210,40 @@ fun HomeScreen(onRestaurantClick: (Restaurant) -> Unit) {
 
 @Composable
 fun ReservationsScreen() {
-    var filter by remember { mutableStateOf("all") }
-    var showDeleteDialog by remember { mutableStateOf<Reservation?>(null) }
-
-    Column {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            FilterButton("Tout", filter == "all") { filter = "all" }
-            Spacer(modifier = Modifier.width(8.dp))
-            FilterButton("Confirmées", filter == "confirmed") { filter = "confirmed" }
-            Spacer(modifier = Modifier.width(8.dp))
-            FilterButton("Annulées", filter == "canceled") { filter = "canceled" }
-        }
-        LazyColumn(modifier = Modifier.padding(horizontal = 16.dp)) {
-            val filteredReservations = when (filter) {
-                "confirmed" -> sampleReservations.filter { it.status == "confirmed" }
-                "canceled" -> sampleReservations.filter { it.status == "canceled" }
-                else -> sampleReservations
-            }
-            if (filteredReservations.isEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier.fillParentMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("Aucune réservation")
-                    }
-                }
-            } else {
-                items(filteredReservations) { reservation ->
-                    ReservationCard(
-                        reservation = reservation,
-                        onDelete = { showDeleteDialog = reservation }
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text("Mes Réservations", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(16.dp))
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            items(sampleReservations) { reservation ->
+                ReservationCard(reservation)
             }
         }
-    }
-
-    if (showDeleteDialog != null) {
-        ConfirmationDialog(
-            title = "Supprimer la réservation?",
-            text = "Êtes-vous sûr de vouloir supprimer cette réservation de la liste ?",
-            onConfirm = {
-                sampleReservations.remove(showDeleteDialog)
-                showDeleteDialog = null
-            },
-            onDismiss = { showDeleteDialog = null }
-        )
     }
 }
 
 @Composable
-fun FilterButton(text: String, isSelected: Boolean, onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        shape = RoundedCornerShape(50),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = if (isSelected) PurplePrimary else Color.Transparent,
-            contentColor = if (isSelected) Color.White else Color.Gray
-        ),
-        elevation = if (isSelected) ButtonDefaults.buttonElevation(defaultElevation = 4.dp) else null
-    ) {
-        Text(text)
-    }
-}
-
-@Composable
-fun ReservationCard(reservation: Reservation, onDelete: () -> Unit) {
+fun ReservationCard(reservation: Reservation) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = com.mral.geektest.ui.theme.LightGray)
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Image(
-                painter = rememberAsyncImagePainter("https://placehold.co/80x80/d1a3e6/ffffff?text=${reservation.restaurantName.first()}"),
-                contentDescription = reservation.restaurantName,
-                modifier = Modifier.size(60.dp).clip(RoundedCornerShape(16.dp)),
-                contentScale = ContentScale.Crop
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(reservation.restaurantName, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                Text(reservation.cuisine, fontSize = 14.sp, color = Color.Gray)
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(reservation.restaurantName, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text(reservation.cuisine, fontSize = 14.sp, color = Color.Gray)
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("${reservation.partySize} • ${reservation.date} à ${reservation.time}", fontSize = 14.sp)
                 Text(
                     text = reservation.status.replaceFirstChar { it.uppercase() },
-                    color = if (reservation.status == "confirmed") ConfirmedGreen else CanceledRed,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier
-                        .padding(top = 4.dp)
-                        .background(
-                            color = if (reservation.status == "confirmed") com.mral.geektest.ui.theme.ConfirmedGreenBg else com.mral.geektest.ui.theme.CanceledRedBg,
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                    color = if (reservation.status == "confirmed") ConfirmedGreen else Color.Gray,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
                 )
-            }
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Gray)
             }
         }
     }
@@ -351,16 +260,16 @@ fun ProfileScreen() {
 fun RestaurantCard(restaurant: Restaurant, onRestaurantClick: (Restaurant) -> Unit) {
     Card(
         modifier = Modifier.width(300.dp).clickable { onRestaurantClick(restaurant) },
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = if (restaurant.name == "The Bistro") PurpleLight else Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Image(
                     painter = rememberAsyncImagePainter(restaurant.imageUrl),
                     contentDescription = restaurant.name,
-                    modifier = Modifier.size(80.dp).clip(RoundedCornerShape(16.dp)),
+                    modifier = Modifier.size(80.dp).clip(RoundedCornerShape(12.dp)),
                     contentScale = ContentScale.Crop
                 )
                 Spacer(modifier = Modifier.width(16.dp))
@@ -376,13 +285,13 @@ fun RestaurantCard(restaurant: Restaurant, onRestaurantClick: (Restaurant) -> Un
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Star, contentDescription = "Rating", tint = Color(0xFFFFC107))
+                    Icon(Icons.Default.Star, contentDescription = "Rating", tint = GoldSecondary)
                     Text(" ${restaurant.rating} • ${restaurant.deliveryTime}", fontSize = 14.sp)
                 }
                 Button(
                     onClick = { onRestaurantClick(restaurant) },
-                    shape = RoundedCornerShape(24.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PurplePrimary)
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = BluePrimary)
                 ) {
                     Text("Réserver", fontSize = 12.sp)
                 }
@@ -395,9 +304,9 @@ fun RestaurantCard(restaurant: Restaurant, onRestaurantClick: (Restaurant) -> Un
 fun NearbyRestaurantItem(restaurant: Restaurant, onRestaurantClick: (Restaurant) -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable { onRestaurantClick(restaurant) },
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = com.mral.geektest.ui.theme.LightGray)
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -406,7 +315,7 @@ fun NearbyRestaurantItem(restaurant: Restaurant, onRestaurantClick: (Restaurant)
             Image(
                 painter = rememberAsyncImagePainter(restaurant.imageUrl),
                 contentDescription = restaurant.name,
-                modifier = Modifier.size(60.dp).clip(RoundedCornerShape(16.dp)),
+                modifier = Modifier.size(60.dp).clip(RoundedCornerShape(12.dp)),
                 contentScale = ContentScale.Crop
             )
             Spacer(modifier = Modifier.width(16.dp))
@@ -416,8 +325,8 @@ fun NearbyRestaurantItem(restaurant: Restaurant, onRestaurantClick: (Restaurant)
             }
             Button(
                 onClick = { onRestaurantClick(restaurant) },
-                shape = RoundedCornerShape(24.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PurplePrimary)
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = BluePrimary)
             ) {
                 Text("Réserver", fontSize = 12.sp)
             }
@@ -434,7 +343,7 @@ fun RestaurantDetailsScreen(restaurant: Restaurant, onBack: () -> Unit, onBook: 
     Column(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.height(200.dp)) {
             Image(
-                painter = rememberAsyncImagePainter("https://placehold.co/450x200/d1a3e6/ffffff?text=${restaurant.name.replace(" ", "+")}"),
+                painter = rememberAsyncImagePainter("https://placehold.co/450x200/1A237E/ffffff?text=${restaurant.name.replace(" ", "+")}"),
                 contentDescription = restaurant.name,
                 modifier = Modifier.fillMaxWidth(),
                 contentScale = ContentScale.Crop
@@ -450,26 +359,20 @@ fun RestaurantDetailsScreen(restaurant: Restaurant, onBack: () -> Unit, onBook: 
         TabRow(
             selectedTabIndex = selectedTabIndex,
             containerColor = Color.Transparent,
-            contentColor = PurplePrimary,
-            indicator = {}
+            contentColor = BluePrimary
         ) {
             tabs.forEachIndexed { index, title ->
                 Tab(
                     selected = selectedTabIndex == index,
                     onClick = { selectedTabIndex = index },
-                    text = { Text(title) },
-                    selectedContentColor = PurplePrimary,
-                    unselectedContentColor = Color.Gray,
-                    modifier = if (selectedTabIndex == index) Modifier.background(PurpleLight, RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)) else Modifier
+                    text = { Text(title) }
                 )
             }
         }
-        Box(modifier = Modifier.background(PurpleLight)) {
-            when (selectedTabIndex) {
-                0 -> BookingForm(onBook = onBook)
-                1 -> MenuTab()
-                2 -> DescriptionTab(restaurant)
-            }
+        when (selectedTabIndex) {
+            0 -> BookingForm(onBook = onBook)
+            1 -> MenuTab()
+            2 -> DescriptionTab(restaurant)
         }
     }
 }
@@ -497,12 +400,12 @@ fun BookingForm(onBook: (String, String, String) -> Unit) {
                 label = { Text("Nombre de personnes") },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 modifier = Modifier.fillMaxWidth().menuAnchor(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedBorderColor = Color.Transparent,
-                    focusedBorderColor = PurplePrimary,
-                    unfocusedContainerColor = InputGray,
-                    focusedContainerColor = InputGray
+                    focusedBorderColor = BluePrimary,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface
                 )
             )
             ExposedDropdownMenu(
@@ -527,12 +430,12 @@ fun BookingForm(onBook: (String, String, String) -> Unit) {
                 onValueChange = { date = it },
                 label = { Text("Date") },
                 modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedBorderColor = Color.Transparent,
-                    focusedBorderColor = PurplePrimary,
-                    unfocusedContainerColor = InputGray,
-                    focusedContainerColor = InputGray
+                    focusedBorderColor = BluePrimary,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface
                 )
             )
             OutlinedTextField(
@@ -540,12 +443,12 @@ fun BookingForm(onBook: (String, String, String) -> Unit) {
                 onValueChange = { time = it },
                 label = { Text("Heure") },
                 modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedBorderColor = Color.Transparent,
-                    focusedBorderColor = PurplePrimary,
-                    unfocusedContainerColor = InputGray,
-                    focusedContainerColor = InputGray
+                    focusedBorderColor = BluePrimary,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface
                 )
             )
         }
@@ -553,8 +456,8 @@ fun BookingForm(onBook: (String, String, String) -> Unit) {
         Button(
             onClick = { onBook(partySize, date, time) },
             modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = RoundedCornerShape(24.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = PurplePrimary)
+            shape = RoundedCornerShape(8.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = BluePrimary)
         ) {
             Text("Réserver", fontSize = 18.sp, fontWeight = FontWeight.Bold)
         }
@@ -573,7 +476,7 @@ fun MenuTab() {
                 Image(
                     painter = rememberAsyncImagePainter(menuItem.imageUrl),
                     contentDescription = menuItem.name,
-                    modifier = Modifier.size(80.dp).clip(RoundedCornerShape(16.dp)),
+                    modifier = Modifier.size(80.dp).clip(RoundedCornerShape(12.dp)),
                     contentScale = ContentScale.Crop
                 )
                 Spacer(modifier = Modifier.width(16.dp))
@@ -614,14 +517,14 @@ fun BookingOverlay(
     onDone: () -> Unit
 ) {
     Dialog(onDismissRequest = onCancel) {
-        Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+        Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
             Column(
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 when (bookingState) {
                     BookingState.CheckingAvailability -> {
-                        CircularProgressIndicator(color = PurplePrimary)
+                        CircularProgressIndicator(color = BluePrimary)
                         Spacer(modifier = Modifier.height(16.dp))
                         Text("Vérification de la disponibilité...", fontWeight = FontWeight.Bold)
                     }
@@ -633,12 +536,12 @@ fun BookingOverlay(
                         Text("Nous avons trouvé 2 tables pour vous.", color = Color.Gray)
                         Spacer(modifier = Modifier.height(16.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                            OutlinedButton(onClick = onCancel, shape = RoundedCornerShape(24.dp), modifier = Modifier.weight(1f)) { Text("Annuler") }
-                            Button(onClick = onContinue, shape = RoundedCornerShape(24.dp), modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = PurplePrimary)) { Text("Continuer") }
+                            OutlinedButton(onClick = onCancel, shape = RoundedCornerShape(8.dp), modifier = Modifier.weight(1f)) { Text("Annuler") }
+                            Button(onClick = onContinue, shape = RoundedCornerShape(8.dp), modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = BluePrimary)) { Text("Continuer") }
                         }
                     }
                     BookingState.Confirming -> {
-                        CircularProgressIndicator(color = PurplePrimary)
+                        CircularProgressIndicator(color = BluePrimary)
                         Spacer(modifier = Modifier.height(16.dp))
                         Text("Confirmation en cours...", fontWeight = FontWeight.Bold)
                     }
@@ -647,40 +550,9 @@ fun BookingOverlay(
                         Spacer(modifier = Modifier.height(16.dp))
                         Text("Votre table est réservée !", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = onDone, shape = RoundedCornerShape(24.dp), colors = ButtonDefaults.buttonColors(containerColor = PurplePrimary)) { Text("Fait") }
+                        Button(onClick = onDone, shape = RoundedCornerShape(8.dp), colors = ButtonDefaults.buttonColors(containerColor = BluePrimary)) { Text("Fait") }
                     }
                     BookingState.Idle -> {}
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ConfirmationDialog(
-    title: String,
-    text: String,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    Dialog(onDismissRequest = onDismiss) {
-        Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
-            Column(modifier = Modifier.padding(24.dp)) {
-                Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text, color = Color.Gray)
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    OutlinedButton(onClick = onDismiss, shape = RoundedCornerShape(24.dp)) {
-                        Text("Annuler")
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(onClick = onConfirm, shape = RoundedCornerShape(24.dp), colors = ButtonDefaults.buttonColors(containerColor = CanceledRed)) {
-                        Text("Confirmer")
-                    }
                 }
             }
         }

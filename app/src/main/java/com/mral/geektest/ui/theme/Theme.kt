@@ -17,28 +17,28 @@ import androidx.core.view.WindowCompat
 
 import androidx.compose.ui.graphics.Color
 
-private val PurpleColorScheme = lightColorScheme(
-    primary = PurplePrimary,
-    secondary = PurpleSecondary,
-    background = PurpleLight,
+private val ModernColorScheme = lightColorScheme(
+    primary = BluePrimary,
+    secondary = GoldSecondary,
+    background = LightGrayBackground,
     surface = Color.White,
     onPrimary = Color.White,
-    onSecondary = Color.White,
-    onBackground = DarkGray,
-    onSurface = DarkGray,
+    onSecondary = Color.Black,
+    onBackground = TextDarkGray,
+    onSurface = TextDarkGray,
 )
 
 @Composable
 fun MyComposeApplicationTheme(
     content: @Composable () -> Unit
 ) {
-    val colorScheme = PurpleColorScheme
+    val colorScheme = ModernColorScheme
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
             window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = true
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
         }
     }
 
