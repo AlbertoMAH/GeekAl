@@ -23,11 +23,11 @@ import com.example.restaurantefinal.Restaurant
 @Composable
 fun RestaurantCard(restaurant: Restaurant, modifier: Modifier = Modifier) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.width(320.dp).height(200.dp), // Giving a fixed size for pager
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
-        Box(modifier = Modifier.height(200.dp)) {
+        Box(modifier = Modifier.fillMaxSize()) {
             Image(
                 painter = rememberAsyncImagePainter(restaurant.imageUrl),
                 contentDescription = restaurant.name,

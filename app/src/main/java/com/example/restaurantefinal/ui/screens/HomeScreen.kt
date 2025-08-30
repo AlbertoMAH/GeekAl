@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
@@ -29,7 +32,6 @@ fun HomeScreen() {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // === Restaurant Section ===
         item {
@@ -53,7 +55,7 @@ fun HomeScreen() {
                 state = pagerState,
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 pageSpacing = 16.dp,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().height(200.dp) // Set height for pager
             ) { page ->
                 RestaurantCard(restaurant = sampleRestaurants[page])
             }
@@ -61,25 +63,40 @@ fun HomeScreen() {
 
         // === Dish Section ===
         item {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             Text(
                 text = "Mets ivoiriens phares",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
+        // Using a sub-composable for the grid to keep the main LazyColumn clean
         item {
-            val pagerState = rememberPagerState(pageCount = { sampleDishes.size })
-            HorizontalPager(
-                state = pagerState,
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                pageSpacing = 16.dp,
-                modifier = Modifier.fillMaxWidth()
-            ) { page ->
-                DishCard(dish = sampleDishes[page])
-            }
+            DishGrid()
+        }
+    }
+}
+
+@Composable
+private fun DishGrid() {
+    // This grid is not independently scrollable; it lays out its items within the parent LazyColumn.
+    // The height is determined by its content.
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        // We need to set a fixed height for a nested lazy layout.
+        // This is a common challenge. A simple way is to calculate the required height.
+        // (Number of rows) * (height of a card + vertical spacing)
+        // Rows = ceil(dishes.size / 2)
+        modifier = Modifier.height( ( (sampleDishes.size + 1) / 2 * 160 ).dp) // Approx height
+    ) {
+        items(sampleDishes) { dish ->
+            DishCard(dish = dish)
         }
     }
 }

@@ -21,30 +21,29 @@ import com.example.restaurantefinal.Dish
 @Composable
 fun DishCard(dish: Dish, modifier: Modifier = Modifier) {
     Card(
-        modifier = modifier.width(140.dp), // Reduced from 160.dp
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(8.dp)
         ) {
             Image(
                 painter = rememberAsyncImagePainter(dish.imageUrl),
                 contentDescription = dish.name,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .height(100.dp) // Reduced from 120.dp
+                    .height(100.dp)
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = dish.name,
                 fontWeight = FontWeight.SemiBold,
-                fontSize = 14.sp, // Slightly smaller text
+                fontSize = 14.sp,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.padding(horizontal = 8.dp).padding(bottom = 8.dp)
             )
         }
     }
