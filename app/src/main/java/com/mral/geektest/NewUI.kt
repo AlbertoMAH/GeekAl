@@ -1,15 +1,14 @@
 package com.mral.geektest
 
-import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -19,7 +18,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -241,7 +244,7 @@ fun AppBottomNavBar(navController: NavController) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(onRestaurantClick: (Restaurant) -> Unit) {
     Column(modifier = Modifier.padding(16.dp)) {
@@ -254,49 +257,27 @@ fun HomeScreen(onRestaurantClick: (Restaurant) -> Unit) {
             Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = Color.Gray)
         }
         Spacer(modifier = Modifier.height(16.dp))
-        var searchText by remember { mutableStateOf("") }
-        var searchActive by remember { mutableStateOf(false) }
-
-        DockedSearchBar(
-            query = searchText,
-            onQueryChange = { searchText = it },
-            onSearch = { searchActive = false },
-            active = searchActive,
-            onActiveChange = { searchActive = it },
+        OutlinedTextField(
+            value = "",
+            onValueChange = {},
             placeholder = { Text("Rechercher des restaurants") },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            val filteredRestaurants = sampleRestaurants.filter {
-                it.name.contains(searchText, ignoreCase = true) ||
-                it.cuisine.contains(searchText, ignoreCase = true)
-            }
-            LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                items(filteredRestaurants) { restaurant ->
-                    NearbyRestaurantItem(
-                        restaurant = restaurant,
-                        onRestaurantClick = {
-                            searchActive = false
-                            onRestaurantClick(restaurant)
-                        }
-                    )
-                }
-            }
-        }
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedBorderColor = Color.Transparent,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedContainerColor = MaterialTheme.colorScheme.surface
+            )
+        )
         Spacer(modifier = Modifier.height(24.dp))
         Text("Pour Vous", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(16.dp))
-        val pagerState = rememberPagerState(pageCount = { sampleRestaurants.take(2).size })
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.height(240.dp),
-            contentPadding = PaddingValues(horizontal = 32.dp),
-            pageSpacing = 16.dp
-        ) { page ->
-            RestaurantCard(
-                restaurant = sampleRestaurants.take(2)[page],
-                onRestaurantClick = onRestaurantClick
-            )
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            items(sampleRestaurants.take(2)) { restaurant ->
+                RestaurantCard(restaurant, onRestaurantClick = onRestaurantClick)
+            }
         }
         Spacer(modifier = Modifier.height(24.dp))
         Text("Restaurants à proximité", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
@@ -476,42 +457,68 @@ fun ProfileScreen() {
 
 @Composable
 fun RestaurantCard(restaurant: Restaurant, onRestaurantClick: (Restaurant) -> Unit) {
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(targetValue = if (isPressed) 0.98f else 1f, label = "scale")
+
     Card(
-        modifier = Modifier.width(300.dp).clickable { onRestaurantClick(restaurant) },
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Image(
-                    painter = rememberAsyncImagePainter(restaurant.imageUrl),
-                    contentDescription = restaurant.name,
-                    modifier = Modifier.size(80.dp).clip(RoundedCornerShape(12.dp)),
-                    contentScale = ContentScale.Crop
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                Column {
-                    Text(restaurant.name, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                    Text(restaurant.cuisine, fontSize = 14.sp, color = Color.Gray)
+        modifier = Modifier
+            .width(300.dp)
+            .scale(scale)
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        isPressed = event.type == PointerEventType.Press
+                    }
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            .clickable { onRestaurantClick(restaurant) },
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Box(modifier = Modifier.height(220.dp)) {
+            Image(
+                painter = rememberAsyncImagePainter(restaurant.imageUrl),
+                contentDescription = restaurant.name,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, Color.Black),
+                            startY = 300f,
+                            endY = 800f
+                        )
+                    )
+            )
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.Bottom
             ) {
+                Text(
+                    text = restaurant.name,
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Star, contentDescription = "Rating", tint = StarYellow)
-                    Text(" ${restaurant.rating} • ${restaurant.deliveryTime}", fontSize = 14.sp)
-                }
-                Button(
-                    onClick = { onRestaurantClick(restaurant) },
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Text("Réserver", fontSize = 12.sp)
+                    Icon(
+                        Icons.Default.Star,
+                        contentDescription = "Rating",
+                        tint = StarYellow,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = " ${restaurant.rating} • ${restaurant.deliveryTime}",
+                        color = Color.White,
+                        fontSize = 14.sp
+                    )
                 }
             }
         }

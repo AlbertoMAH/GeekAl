@@ -12,10 +12,10 @@ data class Restaurant(
 )
 
 val sampleRestaurants = listOf(
-    Restaurant(1L, "The Bistro", "Cuisine française", 4.5, "25 min", "https://placehold.co/80x80/d1a3e6/ffffff?text=B"),
-    Restaurant(2L, "French Pâtisserie", "Boulangerie & Café", 4.8, "15 min", "https://placehold.co/80x80/e8b9f1/ffffff?text=P"),
-    Restaurant(3L, "Le Jardin", "Cuisine française", 4.6, "20 min", "https://placehold.co/60x60/d1a3e6/ffffff?text=L"),
-    Restaurant(4L, "La Trattoria", "Cuisine italienne", 4.7, "30 min", "https://placehold.co/60x60/d1a3e6/ffffff?text=L")
+    Restaurant(1L, "The Bistro", "Cuisine française", 4.5, "25 min", "https://loremflickr.com/800/600/restaurant"),
+    Restaurant(2L, "French Pâtisserie", "Boulangerie & Café", 4.8, "15 min", "https://loremflickr.com/800/600/patisserie"),
+    Restaurant(3L, "Le Jardin", "Cuisine française", 4.6, "20 min", "https://loremflickr.com/800/600/garden,restaurant"),
+    Restaurant(4L, "La Trattoria", "Cuisine italienne", 4.7, "30 min", "https://loremflickr.com/800/600/trattoria")
 )
 
 data class MenuItem(
