@@ -10,13 +10,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -24,7 +22,6 @@ import com.example.restaurantefinal.sampleDishes
 import com.example.restaurantefinal.sampleRestaurants
 import com.example.restaurantefinal.ui.composables.DishCard
 import com.example.restaurantefinal.ui.composables.RestaurantCard
-import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -34,27 +31,35 @@ fun HomeScreen() {
         contentPadding = PaddingValues(vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // === Restaurant Section ===
         item {
             Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                 Text(
-                    text = "Restaurants",
+                    text = "Pour toi",
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "A proximité",
+                    text = "Restaurants partenaires",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Normal
                 )
             }
         }
-        items(sampleRestaurants) { restaurant ->
-            RestaurantCard(
-                restaurant = restaurant,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
+
+        item {
+            val pagerState = rememberPagerState(pageCount = { sampleRestaurants.size })
+            HorizontalPager(
+                state = pagerState,
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                pageSpacing = 16.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) { page ->
+                RestaurantCard(restaurant = sampleRestaurants[page])
+            }
         }
 
+        // === Dish Section ===
         item {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
@@ -67,14 +72,6 @@ fun HomeScreen() {
 
         item {
             val pagerState = rememberPagerState(pageCount = { sampleDishes.size })
-            LaunchedEffect(Unit) {
-                while (true) {
-                    delay(3000)
-                    val nextPage = (pagerState.currentPage + 1) % pagerState.pageCount
-                    pagerState.animateScrollToPage(nextPage)
-                }
-            }
-
             HorizontalPager(
                 state = pagerState,
                 contentPadding = PaddingValues(horizontal = 16.dp),

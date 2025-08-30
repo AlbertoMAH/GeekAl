@@ -42,6 +42,15 @@ val sampleRestaurants = listOf(
         rating = 4.3,
         deliveryTime = "20-30 min",
         imageUrl = "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?q=80&w=1887&auto=format&fit=crop"
+    ),
+    Restaurant(
+        id = 4L,
+        name = "La Villa",
+        description = "Un cadre chic pour une cuisine raffinée.",
+        cuisine = "Européen - Gastronomique",
+        rating = 4.9,
+        deliveryTime = "40-50 min",
+        imageUrl = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2070&auto=format&fit=crop"
     )
 )
 
@@ -58,34 +67,4 @@ val sampleDishes = listOf(
     Dish(3L, "Placali", "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?q=80&w=1980&auto=format&fit=crop"),
     Dish(4L, "Kédjénou", "https://images.unsplash.com/photo-1484723051597-63b3b1c86e89?q=80&w=1780&auto=format&fit=crop"),
     Dish(5L, "N'Gouan", "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?q=80&w=1910&auto=format&fit=crop")
-)
-
-
-// Keeping these for now, might be used elsewhere
-data class MenuItem(
-    val name: String,
-    val description: String,
-    val price: String,
-    val imageUrl: String
-)
-
-val sampleMenu = listOf(
-    MenuItem("Soupe à l'oignon", "Soupe à l'oignon gratinée traditionnelle.", "12€", "https://placehold.co/80x80/d1a3e6/ffffff?text=S"),
-    MenuItem("Salade Niçoise", "Thon, pommes de terre, œufs et haricots verts.", "15€", "https://placehold.co/80x80/d1a3e6/ffffff?text=S"),
-    MenuItem("Coq au vin", "Poulet braisé au vin, champignons et ail.", "24€", "https://placehold.co/80x80/d1a3e6/ffffff?text=C")
-)
-
-data class Reservation(
-    val id: Long,
-    val restaurantName: String,
-    val cuisine: String,
-    val partySize: String,
-    val date: String,
-    val time: String,
-    var status: String // "confirmed" or "canceled"
-)
-
-val sampleReservations = mutableStateListOf(
-    Reservation(1L, "The Bistro", "Cuisine française", "2 personnes", "29 août 2025", "19:30", "confirmed"),
-    Reservation(2L, "La Trattoria", "Cuisine italienne", "4 personnes", "28 août 2025", "20:00", "canceled")
 )

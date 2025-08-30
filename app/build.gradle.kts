@@ -54,6 +54,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("io.coil-kt:coil-compose:2.5.0")
+    implementation("androidx.compose.foundation:foundation:1.6.8")
+
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
