@@ -6,24 +6,28 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.restaurantefinal.ui.screens.HomeScreen
+import com.example.restaurantefinal.ui.screens.ProfileScreen
 import com.example.restaurantefinal.ui.screens.ReservationsScreen
-import com.example.restaurantefinal.ui.screens.SettingsScreen
 
 @Composable
-fun AppNavigation(navController: NavHostController, modifier: Modifier = Modifier) {
+fun AppNavigation(
+    navController: NavHostController,
+    modifier: Modifier = Modifier,
+    onShowMessage: (String) -> Unit
+) {
     NavHost(
         navController = navController,
         startDestination = NavBarScreen.Home.route,
         modifier = modifier
     ) {
         composable(NavBarScreen.Home.route) {
-            HomeScreen()
+            HomeScreen(onShowMessage = onShowMessage)
         }
         composable(NavBarScreen.Reservations.route) {
             ReservationsScreen()
         }
-        composable(NavBarScreen.Settings.route) {
-            SettingsScreen()
+        composable(NavBarScreen.Profile.route) {
+            ProfileScreen()
         }
     }
 }

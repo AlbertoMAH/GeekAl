@@ -1,7 +1,12 @@
 package com.example.restaurantefinal.ui.composables
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -17,33 +22,43 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.example.restaurantefinal.Dish
+import com.example.restaurantefinal.ui.theme.Gray800
+import com.example.restaurantefinal.ui.theme.Gray900
 
 @Composable
 fun DishCard(dish: Dish, modifier: Modifier = Modifier) {
     Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        modifier = modifier.width(144.dp), // w-36
+        shape = RoundedCornerShape(16.dp), // rounded-2xl
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp), // shadow-lg
+        colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color.White)
     ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(12.dp).fillMaxWidth(), // p-3
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
                 painter = rememberAsyncImagePainter(dish.imageUrl),
                 contentDescription = dish.name,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .height(100.dp)
+                    .height(112.dp) // h-28
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+                    .clip(RoundedCornerShape(8.dp)) // rounded-lg
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp)) // mb-2
             Text(
                 text = dish.name,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 14.sp,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 8.dp).padding(bottom = 8.dp)
+                fontSize = 16.sp, // text-base
+                fontWeight = FontWeight.Bold,
+                color = Gray900,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = dish.description,
+                fontSize = 12.sp, // text-xs
+                color = Gray800,
+                textAlign = TextAlign.Center
             )
         }
     }
