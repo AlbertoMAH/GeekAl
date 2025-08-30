@@ -72,4 +72,5 @@ dependencies {
     implementation("org.maplibre.gl:android-sdk:11.12.1")
     // https://mvnrepository.com/artifact/com.google.android.gms/play-services-location
     implementation("com.google.android.gms:play-services-location:21.3.0")
+
 }

@@ -1,5 +1,6 @@
 package com.mral.geektest
 
+import android.os.Bundle
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -24,14 +25,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
 import coil.compose.rememberAsyncImagePainter
+import org.maplibre.android.annotations.MarkerOptions
+import org.maplibre.android.camera.CameraPosition
+import org.maplibre.android.geometry.LatLng
+import org.maplibre.android.maps.MapView
 import com.mral.geektest.ui.theme.GreenConfirmedText
 import com.mral.geektest.ui.theme.StarYellow
 import kotlinx.coroutines.delay
@@ -282,13 +292,93 @@ fun HomeScreen(onRestaurantClick: (Restaurant) -> Unit) {
         Spacer(modifier = Modifier.height(24.dp))
         Text("Restaurants à proximité", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(16.dp))
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            items(sampleRestaurants.drop(2)) { restaurant ->
-                NearbyRestaurantItem(restaurant, onRestaurantClick = onRestaurantClick)
+        NearbyRestaurantsMap(
+            restaurants = sampleRestaurants.drop(2),
+            onRestaurantClick = onRestaurantClick
+        )
+    }
+}
+
+@Composable
+fun NearbyRestaurantsMap(
+    restaurants: List<Restaurant>,
+    onRestaurantClick: (Restaurant) -> Unit
+) {
+    val mapView = rememberMapViewWithLifecycle()
+    var selectedRestaurant by remember { mutableStateOf<Restaurant?>(null) }
+
+    Box(modifier = Modifier.height(300.dp).fillMaxWidth().clip(RoundedCornerShape(16.dp))) {
+        AndroidView({ mapView }) { view ->
+            view.getMapAsync { map ->
+                map.setStyle("https://demotiles.maplibre.org/style.json") {
+                    map.cameraPosition = org.maplibre.android.camera.CameraPosition.Builder()
+                        .target(LatLng(48.85, 2.35))
+                        .zoom(11.0)
+                        .build()
+
+                    restaurants.forEach { restaurant ->
+                        map.addMarker(
+                            MarkerOptions()
+                                .position(LatLng(restaurant.latitude, restaurant.longitude))
+                                .title(restaurant.name)
+                        )
+                    }
+
+                    map.setOnMarkerClickListener { marker ->
+                        selectedRestaurant = restaurants.find { it.name == marker.title }
+                        true
+                    }
+                }
+            }
+        }
+
+        if (selectedRestaurant != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp)
+            ) {
+                NearbyRestaurantItem(
+                    restaurant = selectedRestaurant!!,
+                    onRestaurantClick = onRestaurantClick
+                )
             }
         }
     }
 }
+
+@Composable
+fun rememberMapViewWithLifecycle(): MapView {
+    val context = LocalContext.current
+    val mapView = remember {
+        MapView(context)
+    }
+
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(lifecycle, mapView) {
+        val lifecycleObserver = getMapLifecycleObserver(mapView)
+        lifecycle.addObserver(lifecycleObserver)
+        onDispose {
+            lifecycle.removeObserver(lifecycleObserver)
+        }
+    }
+
+    return mapView
+}
+
+private fun getMapLifecycleObserver(mapView: MapView): LifecycleEventObserver =
+    LifecycleEventObserver { _, event ->
+        when (event) {
+            Lifecycle.Event.ON_CREATE -> mapView.onCreate(Bundle())
+            Lifecycle.Event.ON_START -> mapView.onStart()
+            Lifecycle.Event.ON_RESUME -> mapView.onResume()
+            Lifecycle.Event.ON_PAUSE -> mapView.onPause()
+            Lifecycle.Event.ON_STOP -> mapView.onStop()
+            Lifecycle.Event.ON_DESTROY -> mapView.onDestroy()
+            else -> {}
+        }
+    }
+
 
 @Composable
 fun ReservationsScreen(onReservationClick: (Long) -> Unit) {
