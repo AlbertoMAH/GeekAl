@@ -1,4 +1,4 @@
-package com.mral.geektest.ui.theme
+package com.example.restaurantefinal.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
